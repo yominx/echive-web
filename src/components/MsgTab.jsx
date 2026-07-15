@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useStore } from "../store.jsx";
 import { sessionStats, fillTemplate, copyText, dateMismatch } from "../lib/calc.js";
+import { classSessions, classStudents, resolveSessionId } from "../lib/session.js";
 
 const PLACEHOLDERS = ["{이름}", "{학교}", "{차시}", "{날짜}", "{진도}", "{점수}", "{반평균}", "{등수}", "{달성률}", "{숙제}"];
 
@@ -23,10 +24,8 @@ function CopyButton({ text, className, children }) {
 export default function MsgTab() {
   const { db, ui, setUi, mutate, recOf, recFor, isOwner } = useStore();
   const owner = isOwner;
-  const students = db.students.filter((s) => s.classId === ui.classId).sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko"));
-  const sessions = db.sessions
-    .filter((s) => s.classId === ui.classId)
-    .sort((a, b) => (parseFloat(a.chasi) || 0) - (parseFloat(b.chasi) || 0));
+  const students = classStudents(db, ui.classId);
+  const sessions = classSessions(db, ui.classId);
   const tmplRef = useRef(null);
 
   if (students.length === 0) return <div className="empty">먼저 ① 명단에서 이 반의 학생을 등록하세요.</div>;

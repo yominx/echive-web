@@ -17,7 +17,7 @@ function isTyping() {
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 const firstActiveClass = (db) => (db.classes.find((c) => !c.archived) ?? db.classes[0])?.id ?? null;
-const freshUi = (db) => ({ classId: firstActiveClass(db), tab: "attend", sess: null, msgSess: null, card: null, newSess: false });
+const freshUi = (db) => ({ classId: firstActiveClass(db), tab: "attend", sess: null, card: null });
 
 export function StoreProvider({ children }) {
   const dbRef = useRef(loadDB());
@@ -160,6 +160,6 @@ export function StoreProvider({ children }) {
     });
   }, [me.owner, mutate]);
 
-  const value = { db, ui, setUi, me, setMe, isOwner, viewAsTeacher, setViewAsTeacher, commit, mutate, recOf, recFor, applyRemote, replaceDb };
+  const value = { db, ui, setUi, me, setMe, isOwner, viewAsTeacher, setViewAsTeacher, mutate, recOf, recFor, applyRemote, replaceDb };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

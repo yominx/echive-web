@@ -1,18 +1,31 @@
 import { useState } from "react";
 import { useStore } from "../store.jsx";
 import { uid } from "../lib/db.js";
-import { num, parseMD } from "../lib/calc.js";
+import { num, parseMD, dateMismatch } from "../lib/calc.js";
+import { classSessions, resolveSessionId } from "../lib/session.js";
 
 const WD = ["일", "월", "화", "수", "목", "금", "토"];
 const keyOf = (y, m, d) => `${y}-${m}-${d}`;
 
 export default function SessionGenerator({ onClose }) {
-  const { db, ui, setUi, mutate } = useStore();
-  const sessions = db.sessions.filter((s) => s.classId === ui.classId);
+  const { db, ui, setUi, mutate, isOwner } = useStore();
+  const sessions = classSessions(db, ui.classId);
+  const curSession = sessions.find((s) => s.id === resolveSessionId(db, sessions, ui.sess)) || null;
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth()); // 0-based
   const [sel, setSel] = useState(() => new Set());
+  const [confirmDel, setConfirmDel] = useState(false);
+
+  const delCurrent = () => {
+    if (!curSession) return;
+    mutate((d) => {
+      d.sessions = d.sessions.filter((s) => s.id !== curSession.id);
+      delete d.records[curSession.id];
+    });
+    setUi({ sess: null });
+    setConfirmDel(false);
+  };
 
   // 이미 차시가 있는 날짜(M/D) — 중복 생성 방지 표시
   const existing = new Set(sessions.map((s) => { const md = parseMD(s.date); return md ? `${md.m}/${md.d}` : null; }).filter(Boolean));
@@ -73,13 +86,48 @@ export default function SessionGenerator({ onClose }) {
       <div className="panel" onClick={(e) => e.stopPropagation()} style={{ width: 380, maxWidth: "100%" }}>
         <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--line2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <b style={{ fontSize: 15, fontWeight: 800 }}>차시 생성기</b>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>날짜를 고르면 빠른 순서대로 차시가 만들어집니다.</div>
+            <b style={{ fontSize: 15, fontWeight: 800 }}>차시 관리</b>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>현재 차시를 관리하거나 새 차시를 만듭니다.</div>
           </div>
           <button className="btn line sm" onClick={onClose}>닫기</button>
         </div>
 
+        {/* 현재 차시 관리 */}
+        {curSession && (
+          <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--line2)", background: "#f8fafc" }}>
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <div className="row" style={{ gap: 6, alignItems: "center" }}>
+                <b style={{ fontSize: 14 }}>{curSession.chasi}차시</b>
+                <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--ink2)" }}>
+                  날짜
+                  <input
+                    className="tnum"
+                    key={"d" + curSession.id}
+                    defaultValue={curSession.date || ""}
+                    placeholder="예: 7/21(월)"
+                    style={{ width: 100, padding: "5px 8px" }}
+                    onBlur={(e) => mutate(() => (curSession.date = e.target.value.trim()))}
+                  />
+                </label>
+              </div>
+              {isOwner &&
+                (confirmDel ? (
+                  <span className="row" style={{ gap: 6 }}>
+                    <button className="btn sm" style={{ background: "var(--rose)" }} onClick={delCurrent}>삭제</button>
+                    <button className="link" onClick={() => setConfirmDel(false)}>취소</button>
+                  </span>
+                ) : (
+                  <button className="btn sm" style={{ background: "var(--rose)" }} onClick={() => setConfirmDel(true)}>차시 삭제</button>
+                ))}
+            </div>
+            {dateMismatch(curSession.date) && (
+              <div style={{ color: "var(--rose)", fontSize: 12, fontWeight: 600, marginTop: 6 }}>⚠ 이 차시 날짜({curSession.date})가 오늘과 다릅니다</div>
+            )}
+          </div>
+        )}
+
         <div className="pad">
+          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>➕ 새 차시 — 날짜를 고르면 빠른 순서대로 생성됩니다.</div>
           <div className="row" style={{ justifyContent: "space-between", marginBottom: 10 }}>
             <button className="btn line sm" onClick={() => move(-1)}>◀</button>
             <b className="tnum" style={{ fontSize: 14 }}>{year}. {month + 1}</b>

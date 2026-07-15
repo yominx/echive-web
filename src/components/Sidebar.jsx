@@ -17,7 +17,7 @@ export default function Sidebar() {
   const active = db.classes.filter((c) => !c.archived);
   const archived = db.classes.filter((c) => c.archived);
 
-  const selectCls = (id) => setUi({ classId: id, sess: null, card: null, msgSess: null });
+  const selectCls = (id) => setUi({ classId: id, sess: null, card: null });
   const nextActive = (exceptId) => db.classes.find((x) => !x.archived && x.id !== exceptId)?.id ?? null;
 
   const startRename = (c) => { if (isOwner) { setRenameId(c.id); setRenameVal(c.name); } };

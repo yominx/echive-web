@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore } from "../store.jsx";
+import { classSessions, resolveSessionId } from "../lib/session.js";
 import SessionGenerator from "./SessionGenerator.jsx";
 
 const ITEMS = [
@@ -17,12 +18,8 @@ export default function Nav() {
   const [showGen, setShowGen] = useState(false);
   const items = ITEMS.filter(([k]) => !OWNER_ONLY.has(k) || isOwner);
 
-  const sessions = ui.classId
-    ? db.sessions.filter((s) => s.classId === ui.classId).sort((a, b) => (parseFloat(a.chasi) || 0) - (parseFloat(b.chasi) || 0))
-    : [];
-  const graded = sessions.filter((s) => db.records[s.id] && Object.keys(db.records[s.id]).length);
-  const defId = sessions.length ? (graded.length ? graded[graded.length - 1] : sessions[sessions.length - 1]).id : "";
-  const curId = ui.sess && sessions.some((s) => s.id === ui.sess) ? ui.sess : defId;
+  const sessions = ui.classId ? classSessions(db, ui.classId) : [];
+  const curId = resolveSessionId(db, sessions, ui.sess) ?? "";
 
   return (
     <nav>

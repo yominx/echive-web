@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useStore } from "../store.jsx";
 import { sessionStats, mean, one } from "../lib/calc.js";
+import { classSessions, classStudents } from "../lib/session.js";
 
 const METRICS = [
   { key: "att", label: "출결" },
@@ -13,10 +14,8 @@ const nameCellStyle = { position: "sticky", left: 0, background: "#fff", zIndex:
 export default function DataTab() {
   const { db, ui, recOf } = useStore();
   const [metric, setMetric] = useState("score");
-  const students = db.students.filter((s) => s.classId === ui.classId).sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko"));
-  const sessions = db.sessions
-    .filter((s) => s.classId === ui.classId)
-    .sort((a, b) => (parseFloat(a.chasi) || 0) - (parseFloat(b.chasi) || 0));
+  const students = classStudents(db, ui.classId);
+  const sessions = classSessions(db, ui.classId);
   const className = db.classes.find((c) => c.id === ui.classId)?.name || "";
 
   if (students.length === 0) return <div className="empty">먼저 ① 명단에서 이 반의 학생을 등록하세요.</div>;

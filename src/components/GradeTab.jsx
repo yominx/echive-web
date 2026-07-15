@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useStore } from "../store.jsx";
 import { ATT } from "../lib/constants.js";
-import { uid } from "../lib/db.js";
-import { num, one, pct, rankText, effPoints, testMax, scoreOf, hwCount, hwItems, hwRangesOf, sessionStats, dateMismatch } from "../lib/calc.js";
+import { num, one, pct, rankText, effPoints, testMax, scoreOf, hwCount, hwItems, hwRangesOf, sessionStats } from "../lib/calc.js";
+import { classSessions, classStudents, resolveSessionId } from "../lib/session.js";
 
 const Mini = ({ label, value }) => (
   <div className="mini">
@@ -11,26 +11,13 @@ const Mini = ({ label, value }) => (
   </div>
 );
 
-const NEW_BLANK = { chasi: "", date: "", hs: "1", he: "", q: "20", tt: "100" };
-
 export default function GradeTab({ mode = "score" }) {
-  const { db, ui, setUi, mutate, recOf, recFor, isOwner } = useStore();
+  const { db, ui, mutate, recOf, recFor } = useStore();
   const bodyRef = useRef(null);
-  const [nf, setNf] = useState(NEW_BLANK);
 
-  const students = db.students.filter((s) => s.classId === ui.classId).sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko"));
-  const sessions = db.sessions
-    .filter((s) => s.classId === ui.classId)
-    .sort((a, b) => (parseFloat(a.chasi) || 0) - (parseFloat(b.chasi) || 0));
-
-  // 기본 차시 선택
-  const resolvedSess = (() => {
-    if (ui.sess && sessions.some((s) => s.id === ui.sess)) return ui.sess;
-    if (!sessions.length) return null;
-    const graded = sessions.filter((s) => db.records[s.id] && Object.keys(db.records[s.id]).length);
-    return (graded.length ? graded[graded.length - 1] : sessions[sessions.length - 1]).id;
-  })();
-  const session = sessions.find((s) => s.id === resolvedSess) || null;
+  const students = classStudents(db, ui.classId);
+  const sessions = classSessions(db, ui.classId);
+  const session = sessions.find((s) => s.id === resolveSessionId(db, sessions, ui.sess)) || null;
 
   // 레거시 차시에 test 객체 보정
   useEffect(() => {
@@ -58,95 +45,17 @@ export default function GradeTab({ mode = "score" }) {
       </div>
     );
 
-  const makeSession = () => {
-    const chasi = nf.chasi.trim();
-    if (!chasi) return;
-    const s = {
-      id: uid(),
-      classId: ui.classId,
-      chasi,
-      date: nf.date.trim(),
-      hwRanges: [{ start: nf.hs.trim(), end: nf.he.trim(), req: true }],
-      testTotal: nf.tt.trim() || "100",
-      test: { qCount: num(nf.q) || 20, points: [] },
-    };
-    mutate((d) => d.sessions.push(s));
-    setUi({ sess: s.id, newSess: false });
-    setNf(NEW_BLANK);
-  };
-
-  const delSession = () => {
-    if (!confirm(`${session.chasi}차시를 삭제할까요?`)) return;
-    mutate((d) => {
-      d.sessions = d.sessions.filter((s) => s.id !== session.id);
-      delete d.records[session.id];
-    });
-    setUi({ sess: null });
-  };
-
   return (
     <div ref={bodyRef}>
       {header}
-
-      <div className="row" style={{ marginBottom: 8 }}>
-        {session ? (
-          <b style={{ fontSize: 15 }}>{session.chasi}차시</b>
-        ) : (
-          <span style={{ color: "var(--muted)", fontSize: 13 }}>차시를 선택하세요 (상단 오른쪽 차시 선택)</span>
-        )}
-        {session && (
-          <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--ink2)" }}>
-            날짜
-            <input
-              className="tnum"
-              key={"date" + session.id}
-              defaultValue={session.date || ""}
-              placeholder="예: 7/21(월)"
-              style={{ width: 108, padding: "6px 8px" }}
-              onBlur={(e) => mutate(() => (session.date = e.target.value.trim()))}
-            />
-          </label>
-        )}
-        <button className="btn" onClick={() => setUi({ newSess: !ui.newSess })}>+ 새 차시</button>
-        {session && isOwner && (
-          <button className="del" style={{ padding: "8px 12px" }} onClick={delSession}>차시 삭제</button>
-        )}
-        {session && dateMismatch(session.date) && (
-          <span style={{ color: "var(--rose)", fontSize: 12, fontWeight: 600, marginLeft: 4 }}>
-            ⚠ 이 차시 날짜({session.date})가 오늘과 다릅니다
-          </span>
-        )}
-      </div>
-
-      {ui.newSess && (
-        <div className="panel pad" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
-          <NewField label="회차" width={80} value={nf.chasi} onChange={(v) => setNf((f) => ({ ...f, chasi: v }))} placeholder="예: 12" />
-          <NewField label="날짜" width={114} value={nf.date} onChange={(v) => setNf((f) => ({ ...f, date: v }))} placeholder="예: 7/21(월)" />
-          <NewField label="숙제 시작번호" width={96} value={nf.hs} onChange={(v) => setNf((f) => ({ ...f, hs: v }))} tnum />
-          <NewField label="숙제 끝번호" width={96} value={nf.he} onChange={(v) => setNf((f) => ({ ...f, he: v }))} placeholder="예: 40" tnum />
-          <NewField label="테스트 문항 수" width={100} value={nf.q} onChange={(v) => setNf((f) => ({ ...f, q: v }))} tnum />
-          <NewField label="테스트 만점" width={90} value={nf.tt} onChange={(v) => setNf((f) => ({ ...f, tt: v }))} tnum />
-          <button className="btn dark" onClick={makeSession}>만들기</button>
-        </div>
-      )}
-
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginTop: 12 }}>
         {!session ? (
-          <div className="empty">차시를 선택하거나 새로 만들어 채점을 시작하세요.</div>
+          <div className="empty">상단 오른쪽에서 차시를 선택하거나, 「차시 생성기」로 차시를 만들어 주세요.</div>
         ) : (
           <GradeBody bodyRef={bodyRef} session={session} students={students} store={{ mutate, recOf, recFor }} mode={mode} />
         )}
       </div>
     </div>
-  );
-}
-
-function NewField({ label, width, value, onChange, placeholder, tnum }) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      <input className={tnum ? "tnum" : ""} style={{ width }} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
-    </label>
   );
 }
 
