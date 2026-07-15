@@ -31,6 +31,9 @@ export function StoreProvider({ children }) {
 
   // 현재 로그인 사용자 + 주인 여부 (App 의 인증 흐름에서 설정)
   const [me, setMe] = useState({ email: "", owner: false });
+  // 관리자 테스트용: 일반 선생님 화면 미리보기 (권한만 낮춰서 보기)
+  const [viewAsTeacher, setViewAsTeacher] = useState(false);
+  const isOwner = me.owner && !viewAsTeacher; // UI 권한 판정용 유효 주인 여부
 
   // 활동 로그: 직전에 기록한 스냅샷 ↔ 현재를 비교해 디바운스로 요약 기록
   const loggedSnap = useRef(clone(dbRef.current));
@@ -141,6 +144,6 @@ export function StoreProvider({ children }) {
     return () => document.removeEventListener("visibilitychange", h);
   }, [flushLog]);
 
-  const value = { db, ui, setUi, me, setMe, commit, mutate, recOf, recFor, applyRemote, replaceDb };
+  const value = { db, ui, setUi, me, setMe, isOwner, viewAsTeacher, setViewAsTeacher, commit, mutate, recOf, recFor, applyRemote, replaceDb };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

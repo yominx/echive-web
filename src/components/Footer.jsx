@@ -6,10 +6,16 @@ import AdminPanel from "./AdminPanel.jsx";
 import LogPanel from "./LogPanel.jsx";
 
 export default function Footer({ cloudOn }) {
-  const { db, replaceDb, me } = useStore();
+  const { db, replaceDb, me, isOwner, viewAsTeacher, setViewAsTeacher, ui, setUi } = useStore();
   const fileRef = useRef(null);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showLog, setShowLog] = useState(false);
+
+  const togglePreview = () => {
+    const next = !viewAsTeacher;
+    setViewAsTeacher(next);
+    if (next && ui.tab === "roster") setUi({ tab: "grade" }); // 선생님은 명단 탭이 없음
+  };
 
   const onSeed = () => replaceDb(makeSeed(), true, "예시 데이터 채우기");
 
@@ -57,16 +63,30 @@ export default function Footer({ cloudOn }) {
     <>
     <footer>
       <div className="wrap">
-        <span className="noprint">
-          {cloudOn ? "🟢 공유 중 · 모든 선생님이 같은 데이터를 실시간으로 사용합니다" : "이 브라우저에 저장됩니다 (공유 미설정)"}
+        <span className="noprint" style={viewAsTeacher ? { color: "var(--amber)", fontWeight: 700 } : undefined}>
+          {viewAsTeacher
+            ? "👀 일반 선생님 화면 미리보기 중 (관리 기능 숨김)"
+            : cloudOn
+            ? "🟢 공유 중 · 모든 선생님이 같은 데이터를 실시간으로 사용합니다"
+            : "이 브라우저에 저장됩니다 (공유 미설정)"}
         </span>
         <span className="foot-btns">
           {me?.owner && (
+            <button
+              className={"btn " + (viewAsTeacher ? "dark" : "line")}
+              style={{ padding: "7px 12px" }}
+              onClick={togglePreview}
+              title="관리자 테스트용: 일반 선생님 화면으로 전환"
+            >
+              {viewAsTeacher ? "관리자로 복귀" : "선생님 화면 미리보기"}
+            </button>
+          )}
+          {isOwner && (
             <button className="btn line" style={{ padding: "7px 12px" }} onClick={() => setShowLog(true)}>
               활동 로그
             </button>
           )}
-          {me?.owner && (
+          {isOwner && (
             <button className="btn line" style={{ padding: "7px 12px" }} onClick={() => setShowAdmin(true)}>
               선생님 관리
             </button>
@@ -76,7 +96,7 @@ export default function Footer({ cloudOn }) {
               로그아웃
             </button>
           )}
-          {me?.owner && db.classes.length === 0 && (
+          {isOwner && db.classes.length === 0 && (
             <button className="btn dark" onClick={onSeed}>
               예시 데이터 채우기
             </button>
@@ -84,7 +104,7 @@ export default function Footer({ cloudOn }) {
           <button className="btn line" style={{ padding: "7px 12px" }} onClick={onBackup}>
             백업 저장
           </button>
-          {me?.owner && (
+          {isOwner && (
             <>
               <button className="btn line" style={{ padding: "7px 12px" }} onClick={() => fileRef.current?.click()}>
                 백업 복원

@@ -21,8 +21,8 @@ function CopyButton({ text, className, children }) {
 }
 
 export default function MsgTab() {
-  const { db, ui, setUi, mutate, recOf, recFor, me } = useStore();
-  const owner = !!me?.owner;
+  const { db, ui, setUi, mutate, recOf, recFor, isOwner } = useStore();
+  const owner = isOwner;
   const students = db.students.filter((s) => s.classId === ui.classId);
   const sessions = db.sessions
     .filter((s) => s.classId === ui.classId)

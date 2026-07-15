@@ -8,8 +8,8 @@ const ITEMS = [
 ];
 
 export default function Nav() {
-  const { ui, setUi, me } = useStore();
-  const items = ITEMS.filter(([k]) => k !== "roster" || me?.owner);
+  const { ui, setUi, isOwner } = useStore();
+  const items = ITEMS.filter(([k]) => k !== "roster" || isOwner);
   return (
     <nav>
       <div className="wrap">

@@ -14,7 +14,7 @@ const Mini = ({ label, value }) => (
 const NEW_BLANK = { chasi: "", date: "", hs: "1", he: "", q: "20", tt: "100" };
 
 export default function GradeTab() {
-  const { db, ui, setUi, mutate, recOf, recFor, me } = useStore();
+  const { db, ui, setUi, mutate, recOf, recFor, isOwner } = useStore();
   const bodyRef = useRef(null);
   const [nf, setNf] = useState(NEW_BLANK);
 
@@ -80,7 +80,7 @@ export default function GradeTab() {
           ))}
         </select>
         <button className="btn" onClick={() => setUi({ newSess: !ui.newSess })}>+ 새 차시</button>
-        {session && me?.owner && (
+        {session && isOwner && (
           <button className="del" style={{ padding: "8px 12px" }} onClick={delSession}>차시 삭제</button>
         )}
         {session && dateMismatch(session.date) && (

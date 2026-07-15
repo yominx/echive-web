@@ -25,7 +25,7 @@ function gate() {
 }
 
 export default function App() {
-  const { ui, applyRemote, me, setMe } = useStore();
+  const { ui, applyRemote, setMe, isOwner } = useStore();
   const useAuth = !!(window.SHARE && window.SHARE.auth);
   const [phase, setPhase] = useState(useAuth ? "loading" : "boot");
   const [deniedEmail, setDeniedEmail] = useState("");
@@ -89,7 +89,7 @@ export default function App() {
           {!ui.classId ? (
             <div className="empty">위에서 반을 먼저 만들어 주세요. (예: 고A)</div>
           ) : ui.tab === "roster" ? (
-            me.owner ? <RosterTab /> : <div className="empty">명단 관리는 주인(관리자)만 사용할 수 있습니다.</div>
+            isOwner ? <RosterTab /> : <div className="empty">명단 관리는 주인(관리자)만 사용할 수 있습니다.</div>
           ) : ui.tab === "grade" ? (
             <GradeTab />
           ) : ui.tab === "card" ? (
