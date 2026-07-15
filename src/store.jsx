@@ -16,7 +16,8 @@ function isTyping() {
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
-const freshUi = (db) => ({ classId: db.classes[0]?.id ?? null, tab: "grade", sess: null, msgSess: null, card: null, newSess: false });
+const firstActiveClass = (db) => (db.classes.find((c) => !c.archived) ?? db.classes[0])?.id ?? null;
+const freshUi = (db) => ({ classId: firstActiveClass(db), tab: "grade", sess: null, msgSess: null, card: null, newSess: false });
 
 export function StoreProvider({ children }) {
   const dbRef = useRef(loadDB());
@@ -84,7 +85,7 @@ export function StoreProvider({ children }) {
       loggedSnap.current = clone(d);
       setUiState((u) => {
         let classId = u.classId;
-        if (classId && !d.classes.some((c) => c.id === classId)) classId = d.classes[0]?.id ?? null;
+        if (classId && !d.classes.some((c) => c.id === classId && !c.archived)) classId = firstActiveClass(d);
         return { ...u, classId };
       });
       bump();

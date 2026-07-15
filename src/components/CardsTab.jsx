@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { useStore } from "../store.jsx";
 import { sessionStats, mean, one, rankText } from "../lib/calc.js";
 import { LOGO_SRC } from "../lib/constants.js";
-import { LineChart, BarChart } from "./Charts.jsx";
+import { BarAvgChart } from "./Charts.jsx";
 
 const Summ = ({ label, value, unit }) => (
   <div>
@@ -158,15 +158,15 @@ export default function CardsTab() {
             <div className="charts" style={{ paddingTop: 8 }}>
               <div>
                 <div className="chart-t">테스트 점수 vs 반평균</div>
-                <LineChart data={view} />
+                <BarAvgChart data={view} valueKey="score" avgKey="avg" />
                 <div className="legend">
                   <span><i style={{ background: "var(--indigo)" }} />학생</span>
-                  <span><i style={{ background: "#cbd5e1" }} />반평균</span>
+                  <span><i style={{ background: "var(--amber)" }} />반평균</span>
                 </div>
               </div>
               <div>
                 <div className="chart-t">숙제 달성률 vs 반평균 (%)</div>
-                <BarChart data={view} />
+                <BarAvgChart data={view} valueKey="wbRate" avgKey="wbAvg" />
                 <div className="legend">
                   <span><i style={{ background: "var(--indigo)" }} />학생</span>
                   <span><i style={{ background: "var(--amber)" }} />반평균</span>

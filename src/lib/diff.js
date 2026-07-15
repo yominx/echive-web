@@ -28,8 +28,13 @@ export function summarizeChanges(prev, next) {
   const pc = byId(prev.classes),
     nc = byId(next.classes);
   for (const id in nc) {
-    if (!pc[id]) out.push(`반 추가: ${nc[id].name}`);
-    else if (pc[id].name !== nc[id].name) out.push(`반 이름 변경: ${pc[id].name} → ${nc[id].name}`);
+    if (!pc[id]) {
+      out.push(`반 추가: ${nc[id].name}`);
+      continue;
+    }
+    if (pc[id].name !== nc[id].name) out.push(`반 이름 변경: ${pc[id].name} → ${nc[id].name}`);
+    if (!pc[id].archived && nc[id].archived) out.push(`반 보관: ${nc[id].name}`);
+    if (pc[id].archived && !nc[id].archived) out.push(`반 복원: ${nc[id].name}`);
   }
   for (const id in pc) if (!nc[id]) out.push(`반 삭제: ${pc[id].name}`);
 
