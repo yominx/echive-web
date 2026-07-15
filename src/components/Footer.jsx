@@ -5,31 +5,33 @@ import { logout } from "../lib/firebase.js";
 import AdminPanel from "./AdminPanel.jsx";
 import LogPanel from "./LogPanel.jsx";
 
+const rowBtn = { width: "100%", textAlign: "left", padding: "9px 11px", borderRadius: 8, fontSize: 13, fontWeight: 600 };
+
 export default function Footer({ cloudOn }) {
   const { db, replaceDb, me, isOwner, viewAsTeacher, setViewAsTeacher, ui, setUi } = useStore();
   const fileRef = useRef(null);
+  const [open, setOpen] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showLog, setShowLog] = useState(false);
 
   const togglePreview = () => {
     const next = !viewAsTeacher;
     setViewAsTeacher(next);
-    if (next && (ui.tab === "roster" || ui.tab === "data")) setUi({ tab: "attend" }); // 선생님은 이 탭들이 없음
+    if (next && (ui.tab === "roster" || ui.tab === "data")) setUi({ tab: "attend" });
+    setOpen(false);
   };
 
-  const onSeed = () => replaceDb(makeSeed(), true, "예시 데이터 채우기");
+  const onSeed = () => { replaceDb(makeSeed(), true, "예시 데이터 채우기"); setOpen(false); };
 
   const onReset = () => {
     const phrase = "초기화를 진행하겠습니다";
     if (!confirm("정말 초기화하겠습니까?\n모든 반·명단·차시·채점 기록이 영구 삭제됩니다.")) return;
     const input = prompt("되돌릴 수 없습니다. 계속하려면 아래 문구를 그대로 입력하세요:\n\n" + phrase);
     if (input == null) return;
-    if (input.trim() !== phrase) {
-      alert("문구가 일치하지 않아 초기화를 취소했습니다.");
-      return;
-    }
+    if (input.trim() !== phrase) { alert("문구가 일치하지 않아 초기화를 취소했습니다."); return; }
     replaceDb(emptyDB(), true, "전체 초기화");
     alert("초기화되었습니다.");
+    setOpen(false);
   };
 
   const onBackup = () => {
@@ -47,13 +49,9 @@ export default function Footer({ cloudOn }) {
     rd.onload = () => {
       try {
         const data = JSON.parse(rd.result);
-        if (data && data.classes && data.students) {
-          replaceDb(migrate(data), true, "백업 복원");
-          alert("백업을 복원했습니다.");
-        } else alert("올바른 백업 파일이 아닙니다.");
-      } catch {
-        alert("파일을 읽을 수 없습니다.");
-      }
+        if (data && data.classes && data.students) { replaceDb(migrate(data), true, "백업 복원"); alert("백업을 복원했습니다."); setOpen(false); }
+        else alert("올바른 백업 파일이 아닙니다.");
+      } catch { alert("파일을 읽을 수 없습니다."); }
     };
     rd.readAsText(f);
     e.target.value = "";
@@ -61,65 +59,51 @@ export default function Footer({ cloudOn }) {
 
   return (
     <>
-    <footer>
-      <div className="wrap">
-        <span className="noprint" style={viewAsTeacher ? { color: "var(--amber)", fontWeight: 700 } : undefined}>
-          {viewAsTeacher
-            ? "👀 일반 선생님 화면 미리보기 중 (관리 기능 숨김)"
-            : cloudOn
-            ? "🟢 공유 중 · 모든 선생님이 같은 데이터를 실시간으로 사용합니다"
-            : "이 브라우저에 저장됩니다 (공유 미설정)"}
-        </span>
-        <span className="foot-btns">
-          {me?.owner && (
-            <button
-              className={"btn " + (viewAsTeacher ? "dark" : "line")}
-              style={{ padding: "7px 12px" }}
-              onClick={togglePreview}
-              title="관리자 테스트용: 일반 선생님 화면으로 전환"
-            >
-              {viewAsTeacher ? "관리자로 복귀" : "선생님 화면 미리보기"}
-            </button>
-          )}
-          {isOwner && (
-            <button className="btn line" style={{ padding: "7px 12px" }} onClick={() => setShowLog(true)}>
-              활동 로그
-            </button>
-          )}
-          {isOwner && (
-            <button className="btn line" style={{ padding: "7px 12px" }} onClick={() => setShowAdmin(true)}>
-              선생님 관리
-            </button>
-          )}
-          {me?.email && (
-            <button className="del" style={{ padding: "7px 12px" }} onClick={() => logout()} title={me.email}>
-              로그아웃
-            </button>
-          )}
-          {isOwner && db.classes.length === 0 && (
-            <button className="btn dark" onClick={onSeed}>
-              예시 데이터 채우기
-            </button>
-          )}
-          <button className="btn line" style={{ padding: "7px 12px" }} onClick={onBackup}>
-            백업 저장
-          </button>
-          {isOwner && (
-            <>
-              <button className="btn line" style={{ padding: "7px 12px" }} onClick={() => fileRef.current?.click()}>
-                백업 복원
+      {/* 플로팅 토글 버튼 */}
+      <button
+        className="noprint"
+        onClick={() => setOpen((o) => !o)}
+        title={viewAsTeacher ? "선생님 화면 미리보기 중 — 눌러서 설정 열기" : "설정 · 관리"}
+        style={{
+          position: "fixed", right: 16, bottom: 16, zIndex: 60, width: 46, height: 46, borderRadius: "50%",
+          background: viewAsTeacher ? "var(--amber)" : "#0f172a", color: "#fff", fontSize: 18,
+          boxShadow: "0 3px 10px #0000003a", display: "grid", placeItems: "center",
+        }}
+      >
+        {open ? "✕" : viewAsTeacher ? "👀" : "⚙"}
+      </button>
+
+      {open && (
+        <>
+          <div className="noprint" onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 55 }} />
+          <div className="noprint" style={{ position: "fixed", right: 16, bottom: 72, zIndex: 56, width: 250, background: "#fff", border: "1px solid var(--line)", borderRadius: 12, boxShadow: "0 10px 30px #00000026", padding: 10 }}>
+            <div style={{ fontSize: 11, color: viewAsTeacher ? "var(--amber)" : "var(--muted)", fontWeight: viewAsTeacher ? 700 : 400, padding: "2px 4px 8px" }}>
+              {viewAsTeacher ? "👀 일반 선생님 화면 미리보기 중" : cloudOn ? "🟢 공유 중 · 실시간 동기화" : "이 브라우저에 저장됨"}
+            </div>
+
+            {me?.owner && (
+              <button className={"btn " + (viewAsTeacher ? "dark" : "line")} style={rowBtn} onClick={togglePreview}>
+                {viewAsTeacher ? "관리자로 복귀" : "선생님 화면 미리보기"}
               </button>
-              <button className="del" style={{ padding: "7px 12px" }} onClick={onReset}>
-                전체 초기화
-              </button>
-              <input ref={fileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={onRestoreFile} />
-            </>
-          )}
-        </span>
-      </div>
-    </footer>
-    {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
-    {showLog && <LogPanel onClose={() => setShowLog(false)} />}
+            )}
+            {isOwner && <button className="btn line" style={rowBtn} onClick={() => { setShowLog(true); setOpen(false); }}>활동 로그</button>}
+            {isOwner && <button className="btn line" style={rowBtn} onClick={() => { setShowAdmin(true); setOpen(false); }}>선생님 관리</button>}
+            {isOwner && db.classes.length === 0 && <button className="btn dark" style={rowBtn} onClick={onSeed}>예시 데이터 채우기</button>}
+            <button className="btn line" style={rowBtn} onClick={onBackup}>백업 저장</button>
+            {isOwner && (
+              <>
+                <button className="btn line" style={rowBtn} onClick={() => fileRef.current?.click()}>백업 복원</button>
+                <button className="del" style={rowBtn} onClick={onReset}>전체 초기화</button>
+                <input ref={fileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={onRestoreFile} />
+              </>
+            )}
+            {me?.email && <button className="del" style={rowBtn} onClick={() => logout()} title={me.email}>로그아웃</button>}
+          </div>
+        </>
+      )}
+
+      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
+      {showLog && <LogPanel onClose={() => setShowLog(false)} />}
     </>
   );
 }

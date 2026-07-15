@@ -8,6 +8,7 @@ const GRACE = 30 * DAY;
 export default function Sidebar() {
   const { db, ui, setUi, mutate, isOwner } = useStore();
   const [showArchive, setShowArchive] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const active = db.classes.filter((c) => !c.archived);
   const archived = db.classes.filter((c) => c.archived);
@@ -49,9 +50,20 @@ export default function Sidebar() {
   const daysLeft = (c) => Math.max(0, Math.ceil((c.deleteAt - Date.now()) / DAY));
   const delDate = (c) => { const d = new Date(c.deleteAt); return `${d.getMonth() + 1}/${d.getDate()}`; };
 
+  if (collapsed) {
+    return (
+      <aside className="noprint" style={{ width: 34, flexShrink: 0, borderRight: "1px solid var(--line)", background: "#fff", position: "sticky", top: 0, height: "100vh", display: "flex", justifyContent: "center", paddingTop: 14 }}>
+        <button onClick={() => setCollapsed(false)} title="반 목록 펼치기" style={{ fontSize: 15, color: "var(--muted)" }}>▶</button>
+      </aside>
+    );
+  }
+
   return (
     <aside style={{ width: 208, flexShrink: 0, alignSelf: "stretch", borderRight: "1px solid var(--line)", background: "#fff", position: "sticky", top: 0, height: "100vh", overflowY: "auto", padding: "16px 12px 96px" }} className="noprint">
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".15em", color: "var(--indigo)", textTransform: "uppercase", marginBottom: 10 }}>반 목록</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".15em", color: "var(--indigo)", textTransform: "uppercase" }}>반 목록</div>
+        <button onClick={() => setCollapsed(true)} title="반 목록 접기" style={{ fontSize: 14, color: "var(--muted)", padding: "0 4px" }}>◀</button>
+      </div>
 
       {active.length === 0 && <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>등록된 반이 없습니다.</div>}
 
