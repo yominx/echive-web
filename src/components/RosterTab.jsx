@@ -2,12 +2,13 @@ import { useRef, useState } from "react";
 import { useStore } from "../store.jsx";
 import { uid } from "../lib/db.js";
 import { parseRows, formatPhone } from "../lib/calc.js";
+import { classStudents } from "../lib/session.js";
 
 const BLANK = { name: "", school: "", grade: "", sp: "", pp: "" };
 
 export default function RosterTab() {
   const { db, ui, mutate } = useStore();
-  const list = db.students.filter((s) => s.classId === ui.classId);
+  const list = classStudents(db, ui.classId); // 이름 가나다순 자동 정렬(추가·삭제 후에도 유지)
   const [form, setForm] = useState(BLANK);
   const [showBulk, setShowBulk] = useState(false);
   const [bulkText, setBulkText] = useState("");

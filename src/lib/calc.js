@@ -32,16 +32,18 @@ export function scoreOf(session, r) {
       sum = 0;
     for (let i = 0; i < pts.length; i++) {
       const mk = r.q[i];
-      if (mk == null || String(mk).trim() === "") continue; // 미응시
-      has = true;
+      if (mk == null || String(mk).trim() === "") continue; // 빈 칸 = 이 문항 미응시
       if (subj[i]) {
+        has = true;
         if (mk === "1") sum += pts[i]; // 주관식 정답
       } else {
         const ans = answers[i];
-        if (ans != null && String(ans).trim() !== "" && String(mk).trim() === String(ans).trim()) sum += pts[i];
+        if (ans == null || String(ans).trim() === "") continue; // 정답 미입력 → 채점 불가(0점 아님)
+        has = true;
+        if (String(mk).trim() === String(ans).trim()) sum += pts[i];
       }
     }
-    if (has) return Math.round(sum * 10) / 10;
+    if (has) return Math.round(sum * 10) / 10; // 채점 가능한 문항이 하나도 없으면 미응시(null)
   }
   return num(r.testScore);
 }

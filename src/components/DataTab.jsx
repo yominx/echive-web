@@ -18,6 +18,7 @@ export default function DataTab() {
   const students = classStudents(db, ui.classId);
   const sessions = classSessions(db, ui.classId);
   const className = db.classes.find((c) => c.id === ui.classId)?.name || "";
+  const summaryLabel = metric === "score" ? "평균" : "요약"; // 테스트는 '평균'으로 표기
 
   if (students.length === 0) return <div className="empty">먼저 ① 명단에서 이 반의 학생을 등록하세요.</div>;
   if (sessions.length === 0) return <div className="empty">먼저 ② 출결·채점에서 차시를 만들어 주세요.</div>;
@@ -124,7 +125,7 @@ export default function DataTab() {
         if (metric === "score") return r.score == null ? "" : r.score;
         return r.wbRate == null ? "" : Math.round(r.wbRate);
       };
-      const header = ["이름", ...sessions.map((s) => `${s.chasi}차시${s.date ? "(" + s.date + ")" : ""}`), "요약"];
+      const header = ["이름", ...sessions.map((s) => `${s.chasi}차시${s.date ? "(" + s.date + ")" : ""}`), summaryLabel];
       const rows = sortedStudents.map((st) => [st.name, ...sdata.map(({ byId }) => rawCell(byId[st.id])), String(studentSummary(st.id)).replace("%", "")]);
       const footer = ["차시평균", ...sdata.map((d) => String(sessionSummary(d)).replace("%", "")), ""];
       const aoa = [header, ...rows, footer];
@@ -170,7 +171,7 @@ export default function DataTab() {
                   {s.date && <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 400 }}>{s.date}</div>}
                 </th>
               ))}
-              <th onClick={() => clickSort("summary")} title="요약 기준 정렬" style={{ textAlign: "center", ...thSort, color: "var(--indigo)" }}>요약{caret("summary")}</th>
+              <th onClick={() => clickSort("summary")} title={summaryLabel + " 기준 정렬"} style={{ textAlign: "center", ...thSort, color: "var(--indigo)" }}>{summaryLabel}{caret("summary")}</th>
             </tr>
           </thead>
           <tbody>

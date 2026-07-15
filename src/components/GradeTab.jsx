@@ -190,6 +190,22 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
       session.test.subj[i] = !session.test.subj[i];
     });
 
+  // 정답칸: 숫자만 입력 + 입력 시 자동으로 다음 정답칸(주관식은 건너뜀)
+  const ansKey = (e) => {
+    const inp = e.currentTarget;
+    const k = e.key;
+    const all = [...(bodyRef.current?.querySelectorAll("input.ans-in") || [])];
+    const pos = all.indexOf(inp);
+    const i = +inp.dataset.c;
+    const focusAt = (p) => { const el = all[p]; if (el) { el.focus(); el.select && el.select(); } };
+    if (/^[0-9]$/.test(k)) { e.preventDefault(); setAnswer(i, k); focusAt(pos + 1); }
+    else if (k === "Backspace") { e.preventDefault(); setAnswer(i, ""); focusAt(pos - 1); }
+    else if (k === "Delete" || k === " ") { e.preventDefault(); setAnswer(i, ""); }
+    else if (k === "ArrowRight") { e.preventDefault(); focusAt(pos + 1); }
+    else if (k === "ArrowLeft") { e.preventDefault(); focusAt(pos - 1); }
+    else if (k !== "Tab") e.preventDefault(); // 숫자 외 입력 차단
+  };
+
   // 셀 색상: 객관식=정답 대조 / 주관식=1 정답, 0·2 오답
   const cellClass = (i, val) => {
     if (val == null || val === "") return "";
@@ -373,11 +389,13 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
                       <>
                         <input
                           className="ans-in tnum"
-                          title="정답"
+                          title="정답 (숫자만 · 입력하면 다음 칸으로 자동 이동)"
                           placeholder="정답"
-                          defaultValue={session.test?.answers?.[i] ?? ""}
+                          data-c={i}
+                          value={session.test?.answers?.[i] ?? ""}
+                          readOnly
                           key={"an" + session.id + "_" + i}
-                          onChange={(e) => { e.target.value = sanitize(e.target.value); setAnswer(i, e.target.value); }}
+                          onKeyDown={ansKey}
                         />
                         <span className="ans-cap">정답</span>
                       </>
