@@ -9,6 +9,10 @@ export default function Sidebar() {
   const { db, ui, setUi, mutate, isOwner } = useStore();
   const [showArchive, setShowArchive] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [renameId, setRenameId] = useState(null);
+  const [renameVal, setRenameVal] = useState("");
 
   const active = db.classes.filter((c) => !c.archived);
   const archived = db.classes.filter((c) => c.archived);
@@ -16,10 +20,11 @@ export default function Sidebar() {
   const selectCls = (id) => setUi({ classId: id, sess: null, card: null, msgSess: null });
   const nextActive = (exceptId) => db.classes.find((x) => !x.archived && x.id !== exceptId)?.id ?? null;
 
-  const renameCls = (c) => {
-    if (!isOwner) return;
-    const n = prompt("반 이름", c.name);
-    if (n && n.trim()) mutate((d) => { const t = d.classes.find((x) => x.id === c.id); if (t) t.name = n.trim(); });
+  const startRename = (c) => { if (isOwner) { setRenameId(c.id); setRenameVal(c.name); } };
+  const saveRename = (c) => {
+    const n = renameVal.trim();
+    if (n) mutate((d) => { const t = d.classes.find((x) => x.id === c.id); if (t) t.name = n; });
+    setRenameId(null);
   };
   const archiveCls = (c) => {
     if (!confirm(`'${c.name}' 반을 보관함으로 옮길까요?\n명단·기록은 유지되며 나중에 복원할 수 있습니다.`)) return;
@@ -43,9 +48,14 @@ export default function Sidebar() {
     });
     if (ui.classId === c.id) selectCls(nextActive(c.id));
   };
-  const addCls = () => {
-    const n = prompt("새 반 이름 (예: 고A)");
-    if (n && n.trim()) { const c = { id: uid(), name: n.trim() }; mutate((d) => d.classes.push(c)); setUi({ classId: c.id }); }
+  const submitAdd = () => {
+    const n = newName.trim();
+    if (!n) return;
+    const c = { id: uid(), name: n };
+    mutate((d) => d.classes.push(c));
+    setUi({ classId: c.id });
+    setNewName("");
+    setAdding(false);
   };
   const daysLeft = (c) => Math.max(0, Math.ceil((c.deleteAt - Date.now()) / DAY));
   const delDate = (c) => { const d = new Date(c.deleteAt); return `${d.getMonth() + 1}/${d.getDate()}`; };
@@ -70,24 +80,37 @@ export default function Sidebar() {
       {active.map((c) => {
         const cnt = db.students.filter((s) => s.classId === c.id).length;
         const on = ui.classId === c.id;
+        const renaming = renameId === c.id;
         return (
           <div key={c.id} style={{ marginBottom: 2 }}>
-            <button
-              onClick={() => selectCls(c.id)}
-              onDoubleClick={() => renameCls(c)}
-              title={isOwner ? "더블클릭: 이름 변경" : ""}
-              style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left",
-                padding: "8px 10px", borderRadius: 8, fontWeight: on ? 700 : 600,
-                background: on ? "#eef2ff" : "transparent", color: on ? "var(--indigo-d)" : "var(--ink2)",
-                border: on ? "1px solid #c7d2fe" : "1px solid transparent",
-              }}
-            >
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</span>
-              <span className="cnt tnum" style={{ fontSize: 11, color: "var(--muted)" }}>{cnt}</span>
-            </button>
-            {on && isOwner && (
+            {renaming ? (
+              <input
+                autoFocus
+                value={renameVal}
+                onChange={(e) => setRenameVal(e.target.value)}
+                onBlur={() => saveRename(c)}
+                onKeyDown={(e) => { if (e.key === "Enter") saveRename(c); if (e.key === "Escape") setRenameId(null); }}
+                style={{ width: "100%", padding: "7px 9px" }}
+              />
+            ) : (
+              <button
+                onClick={() => selectCls(c.id)}
+                onDoubleClick={() => startRename(c)}
+                title={isOwner ? "더블클릭: 이름 변경" : ""}
+                style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left",
+                  padding: "8px 10px", borderRadius: 8, fontWeight: on ? 700 : 600,
+                  background: on ? "#eef2ff" : "transparent", color: on ? "var(--indigo-d)" : "var(--ink2)",
+                  border: on ? "1px solid #c7d2fe" : "1px solid transparent",
+                }}
+              >
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</span>
+                <span className="cnt tnum" style={{ fontSize: 11, color: "var(--muted)" }}>{cnt}</span>
+              </button>
+            )}
+            {on && isOwner && !renaming && (
               <div className="row" style={{ gap: 10, padding: "3px 10px 6px" }}>
+                <button className="link" style={{ fontSize: 11 }} onClick={() => startRename(c)}>이름변경</button>
                 <button className="link" style={{ fontSize: 11 }} onClick={() => archiveCls(c)}>보관</button>
                 <button className="del" style={{ fontSize: 11 }} onClick={() => scheduleDelete(c)}>삭제</button>
               </div>
@@ -96,9 +119,25 @@ export default function Sidebar() {
         );
       })}
 
-      {isOwner && (
-        <button className="btn line sm" style={{ width: "100%", marginTop: 8 }} onClick={addCls}>+ 반 만들기</button>
-      )}
+      {isOwner &&
+        (adding ? (
+          <div style={{ marginTop: 8 }}>
+            <input
+              autoFocus
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="반 이름 (예: 고A)"
+              onKeyDown={(e) => { if (e.key === "Enter") submitAdd(); if (e.key === "Escape") { setAdding(false); setNewName(""); } }}
+              style={{ width: "100%", padding: "7px 9px", marginBottom: 6 }}
+            />
+            <div className="row" style={{ gap: 8 }}>
+              <button className="btn sm" onClick={submitAdd}>만들기</button>
+              <button className="link" onClick={() => { setAdding(false); setNewName(""); }}>취소</button>
+            </div>
+          </div>
+        ) : (
+          <button className="btn line sm" style={{ width: "100%", marginTop: 8 }} onClick={() => setAdding(true)}>+ 반 만들기</button>
+        ))}
 
       {isOwner && archived.length > 0 && (
         <div style={{ marginTop: 14, borderTop: "1px solid var(--line2)", paddingTop: 10 }}>

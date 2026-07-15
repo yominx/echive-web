@@ -34,7 +34,7 @@ export default function DataTab() {
   // 셀 표시
   const cell = (r) => {
     if (!r) return <span style={{ color: "#cbd5e1" }}>–</span>;
-    if (metric === "att") return r.att ? <span className={"tag att-" + attDisp(r.att)}>{attDisp(r.att)}</span> : <span style={{ color: "#cbd5e1" }}>–</span>;
+    if (metric === "att") return r.att ? <span className={"tag att-" + attDisp(r.att)} style={{ whiteSpace: "nowrap" }}>{attDisp(r.att)}</span> : <span style={{ color: "#cbd5e1" }}>–</span>;
     if (metric === "score") return r.score == null ? <span style={{ color: "#cbd5e1" }}>–</span> : <b>{r.score}</b>;
     // hw
     if (r.wbRate == null) return <span style={{ color: "#cbd5e1" }}>–</span>;
@@ -135,7 +135,7 @@ export default function DataTab() {
                   {st.name}
                 </td>
                 {sdata.map(({ byId, s }) => (
-                  <td key={s.id} className="tnum" style={{ textAlign: "center" }}>{cell(byId[st.id])}</td>
+                  <td key={s.id} className="tnum" style={{ textAlign: "center", whiteSpace: "nowrap", padding: "6px 6px" }}>{cell(byId[st.id])}</td>
                 ))}
                 <td className="tnum" style={{ textAlign: "center", fontWeight: 700 }}>{studentSummary(st.id)}</td>
               </tr>

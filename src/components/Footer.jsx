@@ -13,6 +13,9 @@ export default function Footer({ cloudOn }) {
   const [open, setOpen] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showLog, setShowLog] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetPhrase, setResetPhrase] = useState("");
+  const RESET_PHRASE = "초기화를 진행하겠습니다";
 
   const togglePreview = () => {
     const next = !viewAsTeacher;
@@ -23,14 +26,11 @@ export default function Footer({ cloudOn }) {
 
   const onSeed = () => { replaceDb(makeSeed(), true, "예시 데이터 채우기"); setOpen(false); };
 
-  const onReset = () => {
-    const phrase = "초기화를 진행하겠습니다";
-    if (!confirm("정말 초기화하겠습니까?\n모든 반·명단·차시·채점 기록이 영구 삭제됩니다.")) return;
-    const input = prompt("되돌릴 수 없습니다. 계속하려면 아래 문구를 그대로 입력하세요:\n\n" + phrase);
-    if (input == null) return;
-    if (input.trim() !== phrase) { alert("문구가 일치하지 않아 초기화를 취소했습니다."); return; }
+  const doReset = () => {
+    if (resetPhrase.trim() !== RESET_PHRASE) return;
     replaceDb(emptyDB(), true, "전체 초기화");
-    alert("초기화되었습니다.");
+    setResetting(false);
+    setResetPhrase("");
     setOpen(false);
   };
 
@@ -93,7 +93,26 @@ export default function Footer({ cloudOn }) {
             {isOwner && (
               <>
                 <button className="btn line" style={rowBtn} onClick={() => fileRef.current?.click()}>백업 복원</button>
-                <button className="del" style={rowBtn} onClick={onReset}>전체 초기화</button>
+                {resetting ? (
+                  <div style={{ border: "1px solid #fecdd3", background: "#fff1f2", borderRadius: 8, padding: 8, marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: "var(--rose)", fontWeight: 700, marginBottom: 4 }}>⚠ 모든 데이터가 영구 삭제됩니다. 아래 문구를 입력하세요:</div>
+                    <div style={{ fontSize: 11, color: "var(--ink2)", marginBottom: 5 }}>{RESET_PHRASE}</div>
+                    <input
+                      autoFocus
+                      value={resetPhrase}
+                      onChange={(e) => setResetPhrase(e.target.value)}
+                      placeholder="문구 입력"
+                      style={{ width: "100%", padding: "6px 8px", marginBottom: 6, fontSize: 12 }}
+                      onKeyDown={(e) => { if (e.key === "Enter") doReset(); }}
+                    />
+                    <div className="row" style={{ gap: 8 }}>
+                      <button className="btn sm" style={{ background: "var(--rose)", opacity: resetPhrase.trim() === RESET_PHRASE ? 1 : 0.5 }} disabled={resetPhrase.trim() !== RESET_PHRASE} onClick={doReset}>초기화 실행</button>
+                      <button className="link" onClick={() => { setResetting(false); setResetPhrase(""); }}>취소</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button className="del" style={rowBtn} onClick={() => setResetting(true)}>전체 초기화</button>
+                )}
                 <input ref={fileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={onRestoreFile} />
               </>
             )}
