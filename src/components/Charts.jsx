@@ -1,22 +1,27 @@
-// 안내카드 차트 — 학생 값은 막대(indigo), 반평균은 점+선(amber)로 통일
+// 안내카드 차트 — 학생: 점+실선(indigo), 반평균: 점+점선(amber)
 const GRID = [0, 0.25, 0.5, 0.75, 1];
 
+const linePath = (data, key, x, y) => {
+  let d = "", started = false;
+  data.forEach((p, i) => {
+    const v = p[key];
+    if (v == null) return;
+    d += (started ? "L" : "M") + x(i) + " " + y(v) + " ";
+    started = true;
+  });
+  return d;
+};
+
 export function BarAvgChart({ data, valueKey, avgKey }) {
-  const W = 440, H = 200, pl = 34, pr = 10, pt = 12, ih = H - pt - 26, iw = W - pl - pr, n = data.length, bw = (iw / n) * 0.55;
+  const W = 440, H = 200, pl = 34, pr = 10, pt = 12, ih = H - pt - 26, iw = W - pl - pr, n = data.length;
   const vals = data.flatMap((d) => [d[valueKey], d[avgKey]]).filter((v) => v != null);
   const max = Math.max(100, ...vals);
   const min = Math.min(0, ...vals);
-  const x = (i) => pl + (iw * (i + 0.5)) / n;
+  const x = (i) => pl + (n <= 1 ? iw / 2 : (iw * i) / (n - 1));
   const y = (v) => pt + ih - ((v - min) / (max - min || 1)) * ih;
-  const base = y(min);
 
-  let ap = "", started = false;
-  data.forEach((d, i) => {
-    const v = d[avgKey];
-    if (v == null) return;
-    ap += (started ? "L" : "M") + x(i) + " " + y(v) + " ";
-    started = true;
-  });
+  const sPath = linePath(data, valueKey, x, y);
+  const aPath = linePath(data, avgKey, x, y);
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="200">
@@ -31,11 +36,12 @@ export function BarAvgChart({ data, valueKey, avgKey }) {
           </g>
         );
       })}
-      {data.map((d, i) =>
-        d[valueKey] != null ? <rect key={"b" + i} x={x(i) - bw / 2} y={y(d[valueKey])} width={bw} height={base - y(d[valueKey])} rx="2" fill="var(--indigo)" /> : null
-      )}
-      {ap && <path d={ap} fill="none" stroke="var(--amber)" strokeWidth="2.4" strokeLinejoin="round" />}
-      {data.map((d, i) => (d[avgKey] != null ? <circle key={"c" + i} cx={x(i)} cy={y(d[avgKey])} r="3" fill="var(--amber)" /> : null))}
+      {/* 반평균: 점선 + 점 (amber) */}
+      {aPath && <path d={aPath} fill="none" stroke="var(--amber)" strokeWidth="2.2" strokeDasharray="4 3" strokeLinejoin="round" />}
+      {data.map((d, i) => (d[avgKey] != null ? <circle key={"a" + i} cx={x(i)} cy={y(d[avgKey])} r="3" fill="var(--amber)" /> : null))}
+      {/* 학생: 실선 + 점 (indigo) */}
+      {sPath && <path d={sPath} fill="none" stroke="var(--indigo)" strokeWidth="2.4" strokeLinejoin="round" />}
+      {data.map((d, i) => (d[valueKey] != null ? <circle key={"s" + i} cx={x(i)} cy={y(d[valueKey])} r="3.2" fill="var(--indigo)" /> : null))}
       {data.map((d, i) =>
         n <= 8 || i % 2 === 0 ? (
           <text key={"l" + i} x={x(i)} y={H - 8} fontSize="9" fill="#94a3b8" textAnchor="middle">

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useStore } from "../store.jsx";
 import { uid } from "../lib/db.js";
-import { parseRows } from "../lib/calc.js";
+import { parseRows, formatPhone } from "../lib/calc.js";
 
 const BLANK = { name: "", school: "", grade: "", sp: "", pp: "" };
 
@@ -16,6 +16,7 @@ export default function RosterTab() {
   const xlsxRef = useRef(null);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const setPhone = (k) => (e) => setForm((f) => ({ ...f, [k]: formatPhone(e.target.value) }));
 
   const add = () => {
     const name = form.name.trim();
@@ -108,7 +109,7 @@ export default function RosterTab() {
     });
     setEditId(null);
   };
-  const setD = (k) => (e) => setDraft((d) => ({ ...d, [k]: e.target.value }));
+  const setD = (k) => (e) => setDraft((d) => ({ ...d, [k]: k === "studentPhone" || k === "parentPhone" ? formatPhone(e.target.value) : e.target.value }));
 
   const delStudent = (s) => {
     if (confirm("이 학생을 삭제할까요?")) mutate((d) => (d.students = d.students.filter((x) => x.id !== s.id)));
@@ -123,8 +124,8 @@ export default function RosterTab() {
           <input placeholder="이름" style={{ width: 96 }} value={form.name} onChange={set("name")} onKeyDown={onKey} />
           <input placeholder="학교" style={{ width: 112 }} value={form.school} onChange={set("school")} onKeyDown={onKey} />
           <input placeholder="학년" style={{ width: 64 }} value={form.grade} onChange={set("grade")} onKeyDown={onKey} />
-          <input placeholder="학생 연락처" style={{ width: 150 }} value={form.sp} onChange={set("sp")} onKeyDown={onKey} />
-          <input placeholder="학부모 연락처" style={{ width: 150 }} value={form.pp} onChange={set("pp")} onKeyDown={onKey} />
+          <input placeholder="학생 연락처" style={{ width: 150 }} value={form.sp} onChange={setPhone("sp")} onKeyDown={onKey} />
+          <input placeholder="학부모 연락처" style={{ width: 150 }} value={form.pp} onChange={setPhone("pp")} onKeyDown={onKey} />
           <button className="btn" onClick={add}>추가</button>
           <button className="btn line" style={{ marginLeft: "auto" }} onClick={() => { setShowBulk(true); xlsxRef.current?.click(); }}>
             엑셀 파일 업로드

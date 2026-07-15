@@ -76,10 +76,13 @@ export default function MsgTab() {
         </div>
         <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
           <label className="field" style={{ flex: 1, minWidth: 200 }}>
-            <span>이번 차시 진도 ({"{진도}"}){!owner && <b style={{ color: "var(--muted)", fontWeight: 600 }}> · 주인만 수정</b>}</span>
+            <span>
+              이번 차시 진도 ({"{진도}"}){!owner && <b style={{ color: "var(--muted)", fontWeight: 600 }}> · 주인만 수정</b>}
+              {!progress.trim() && <b style={{ color: "var(--rose)", fontWeight: 700 }}> · ⚠ 입력해 주세요</b>}
+            </span>
             <textarea
               className="msgbox"
-              style={{ minHeight: 56 }}
+              style={{ minHeight: 56, ...(!progress.trim() ? { borderColor: "var(--rose)", boxShadow: "0 0 0 3px #ffe4e6" } : {}) }}
               placeholder="예: 미적분 II · 3단원 극한과 연속"
               value={progress}
               readOnly={!owner}
@@ -127,10 +130,7 @@ export default function MsgTab() {
       </div>
 
       <div className="row" style={{ marginBottom: 10 }}>
-        <CopyButton className="btn" text={() => students.map((s) => msgFor(s)).join("\n\n──────────\n\n")}>
-          전체 메시지 복사
-        </CopyButton>
-        <span style={{ fontSize: 12, color: "var(--muted)" }}>학생 {students.length}명 · 개별 복사도 가능합니다</span>
+        <span style={{ fontSize: 12, color: "var(--muted)" }}>학생 {students.length}명 · 각 학생 카드의 "복사"로 개별 전송하세요.</span>
       </div>
 
       <div>
