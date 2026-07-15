@@ -145,6 +145,21 @@ export function StoreProvider({ children }) {
     return () => document.removeEventListener("visibilitychange", h);
   }, [flushLog]);
 
+  // 삭제 유예(30일)가 만료된 반을 주인 접속 시 자동 영구 정리
+  useEffect(() => {
+    if (!me.owner) return;
+    const now = Date.now();
+    const ids = new Set(dbRef.current.classes.filter((c) => c.deleteAt && c.deleteAt <= now).map((c) => c.id));
+    if (!ids.size) return;
+    mutate((d) => {
+      const sessIds = d.sessions.filter((s) => ids.has(s.classId)).map((s) => s.id);
+      d.sessions = d.sessions.filter((s) => !ids.has(s.classId));
+      sessIds.forEach((id) => delete d.records[id]);
+      d.students = d.students.filter((s) => !ids.has(s.classId));
+      d.classes = d.classes.filter((c) => !ids.has(c.id));
+    });
+  }, [me.owner, mutate]);
+
   const value = { db, ui, setUi, me, setMe, isOwner, viewAsTeacher, setViewAsTeacher, commit, mutate, recOf, recFor, applyRemote, replaceDb };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

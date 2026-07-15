@@ -33,8 +33,11 @@ export function summarizeChanges(prev, next) {
       continue;
     }
     if (pc[id].name !== nc[id].name) out.push(`반 이름 변경: ${pc[id].name} → ${nc[id].name}`);
-    if (!pc[id].archived && nc[id].archived) out.push(`반 보관: ${nc[id].name}`);
-    if (pc[id].archived && !nc[id].archived) out.push(`반 복원: ${nc[id].name}`);
+    const wasArch = !!pc[id].archived, isArch = !!nc[id].archived;
+    const wasDel = !!pc[id].deleteAt, isDel = !!nc[id].deleteAt;
+    if (!wasDel && isDel) out.push(`반 삭제 예약(30일 후): ${nc[id].name}`);
+    else if (!wasArch && isArch) out.push(`반 보관: ${nc[id].name}`);
+    if ((wasArch || wasDel) && !isArch) out.push(`반 복원: ${nc[id].name}`);
   }
   for (const id in pc) if (!nc[id]) out.push(`반 삭제: ${pc[id].name}`);
 
