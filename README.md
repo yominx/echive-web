@@ -17,7 +17,7 @@
 ```
 index.html            Vite 진입점 + window.SHARE 설정(공유·로그인)
 vite.config.js
-netlify.toml          Netlify 빌드 설정 (npm run build → dist)
+vercel.json           Vercel 빌드 설정 (npm run build → dist)
 firebase.json         Firestore 규칙 배포용
 firestore.rules       공유 데이터 보안 규칙
 legacy/index.html     이전 단일 파일 버전(참고용 보존)
@@ -49,37 +49,38 @@ npm run preview    # 빌드 결과 미리보기
 
 ---
 
-## 배포 방법 — Netlify (선택됨)
+## 배포 방법 — Vercel (선택됨)
 
-`netlify.toml` 에 빌드 명령(`npm run build`)과 게시 폴더(`dist`)가
-이미 설정돼 있습니다.
+Vite 프로젝트라 Vercel이 자동 감지합니다. `vercel.json` 에 프레임워크·
+빌드 명령(`npm run build`)·출력 폴더(`dist`)가 명시돼 있습니다.
 
 ### A. GitHub 저장소 연결 (지속 배포, 권장)
 
 푸시할 때마다 자동 빌드·배포됩니다.
 
 1. 이 저장소에 코드가 올라가 있어야 합니다.
-2. [Netlify](https://app.netlify.com) → **Add new site → Import an
-   existing project → GitHub** → `yominx/echive-web` 선택.
-3. 빌드 설정은 비워두면 됩니다 (`netlify.toml` 이 채웁니다:
-   Build command `npm run build`, Publish directory `dist`).
-4. **Deploy** → `https://<사이트이름>.netlify.app` 발급.
+2. [Vercel](https://vercel.com/new) → **Add New… → Project → Import
+   Git Repository** → `yominx/echive-web` 선택.
+3. 빌드 설정은 그대로 두면 됩니다 (Framework: Vite, Build:
+   `npm run build`, Output: `dist` 자동 인식).
+4. **Deploy** → `https://<프로젝트이름>.vercel.app` 발급.
 
 ### B. 즉시 배포 (CLI)
 
 ```bash
-npm run build
-npm install -g netlify-cli
-netlify login
-netlify deploy --prod --dir dist
+npm install -g vercel
+vercel          # 미리보기 배포
+vercel --prod   # 프로덕션 배포
 ```
 
 ### ⚠️ 배포 후 필수 1단계 — 구글 로그인 허용
 
-Netlify 도메인(`<사이트이름>.netlify.app`)을 **Firebase 콘솔 →
+Vercel 도메인(`<프로젝트이름>.vercel.app`)을 **Firebase 콘솔 →
 Authentication → Settings → Authorized domains** 에 추가하세요.
 추가하지 않으면 구글 로그인 팝업이 `auth/unauthorized-domain` 오류로
-막힙니다. (커스텀 도메인을 붙이면 그 도메인도 함께 추가)
+막힙니다. (커스텀 도메인을 붙이면 그 도메인도 함께 추가. 참고로 Vercel은
+프리뷰 배포마다 도메인이 바뀌므로, 로그인 테스트는 프로덕션 도메인이나
+고정 도메인에서 하세요.)
 
 ---
 
@@ -115,7 +116,7 @@ firebase deploy --only firestore:rules
 ## 운영 체크리스트
 
 - **로그인이 `auth/unauthorized-domain` 으로 막힐 때**: 지금 접속한
-  도메인(예: `xxxx.netlify.app`)을 Firebase 콘솔 → Authentication →
+  도메인(예: `xxxx.vercel.app`)을 Firebase 콘솔 → Authentication →
   Settings → **Authorized domains** 에 추가하세요. (오류 화면에도 현재
   주소가 안내됩니다.)
 - **백업**: 앱 하단 "백업 저장 / 백업 복원" 버튼으로 JSON을 내려받고
