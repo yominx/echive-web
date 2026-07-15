@@ -14,6 +14,7 @@ const nameCellStyle = { position: "sticky", left: 0, background: "#fff", zIndex:
 export default function DataTab() {
   const { db, ui, recOf } = useStore();
   const [metric, setMetric] = useState("score");
+  const [sort, setSort] = useState({ col: null, dir: 1 }); // col: "name" | "summary" | 차시 id
   const students = classStudents(db, ui.classId);
   const sessions = classSessions(db, ui.classId);
   const className = db.classes.find((c) => c.id === ui.classId)?.name || "";
@@ -68,6 +69,52 @@ export default function DataTab() {
     return st.wbAvg == null ? "–" : Math.round(st.wbAvg) + "%";
   };
 
+  // 정렬용 숫자값 (선택 지표 기준)
+  const sBy = Object.fromEntries(sdata.map((d) => [d.s.id, d.byId]));
+  const metricVal = (r) => {
+    if (!r) return null;
+    if (metric === "att") return r.att ? (r.att === "현장" ? 1 : 0) : null;
+    if (metric === "score") return r.score;
+    return r.wbRate; // hw
+  };
+  const summaryVal = (stid) => {
+    const scores = [], hws = [];
+    let hyun = 0, taken = 0;
+    sdata.forEach(({ byId }) => {
+      const r = byId[stid];
+      if (!r) return;
+      if (r.score != null) scores.push(r.score);
+      if (r.wbRate != null) hws.push(r.wbRate);
+      if (r.att) { taken++; if (r.att === "현장") hyun++; }
+    });
+    if (metric === "att") return taken ? hyun / taken : null;
+    if (metric === "score") return scores.length ? mean(scores) : null;
+    return hws.length ? mean(hws) : null;
+  };
+  const valOf = (col, st) => {
+    if (col === "name") return st.name;
+    if (col === "summary") return summaryVal(st.id);
+    return metricVal(sBy[col]?.[st.id]); // 차시 id
+  };
+
+  // 정렬 적용된 학생 목록 (빈값은 항상 뒤로)
+  const sortedStudents = (() => {
+    if (!sort.col) return students;
+    return [...students].sort((a, b) => {
+      const x = valOf(sort.col, a), y = valOf(sort.col, b);
+      if (x == null && y == null) return 0;
+      if (x == null) return 1;
+      if (y == null) return -1;
+      if (sort.col === "name") return sort.dir * String(x).localeCompare(String(y), "ko");
+      return sort.dir * (x - y);
+    });
+  })();
+
+  const clickSort = (col) =>
+    setSort((s) => (s.col === col ? { col, dir: -s.dir } : { col, dir: col === "name" ? 1 : -1 }));
+  const caret = (col) => (sort.col === col ? (sort.dir === 1 ? " ▲" : " ▼") : "");
+  const thSort = { cursor: "pointer", userSelect: "none" };
+
   const exportXlsx = async () => {
     try {
       const XLSX = await import("xlsx");
@@ -78,7 +125,7 @@ export default function DataTab() {
         return r.wbRate == null ? "" : Math.round(r.wbRate);
       };
       const header = ["이름", ...sessions.map((s) => `${s.chasi}차시${s.date ? "(" + s.date + ")" : ""}`), "요약"];
-      const rows = students.map((st) => [st.name, ...sdata.map(({ byId }) => rawCell(byId[st.id])), String(studentSummary(st.id)).replace("%", "")]);
+      const rows = sortedStudents.map((st) => [st.name, ...sdata.map(({ byId }) => rawCell(byId[st.id])), String(studentSummary(st.id)).replace("%", "")]);
       const footer = ["차시평균", ...sdata.map((d) => String(sessionSummary(d)).replace("%", "")), ""];
       const aoa = [header, ...rows, footer];
       const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -116,18 +163,18 @@ export default function DataTab() {
         <table style={{ minWidth: 400 + sessions.length * 52 }}>
           <thead>
             <tr>
-              <th style={{ ...nameCellStyle, color: "var(--muted)" }}>이름</th>
+              <th onClick={() => clickSort("name")} title="이름순 정렬" style={{ ...nameCellStyle, ...thSort, color: sort.col === "name" ? "var(--indigo)" : "var(--muted)" }}>이름{caret("name")}</th>
               {sessions.map((s) => (
-                <th key={s.id} style={{ textAlign: "center", minWidth: 48 }}>
-                  <div style={{ color: "var(--ink2)", fontWeight: 700 }}>{s.chasi}</div>
+                <th key={s.id} onClick={() => clickSort(s.id)} title="이 차시 기준 정렬" style={{ textAlign: "center", minWidth: 48, ...thSort, color: sort.col === s.id ? "var(--indigo)" : undefined }}>
+                  <div style={{ fontWeight: 700, color: sort.col === s.id ? "var(--indigo)" : "var(--ink2)" }}>{s.chasi}{caret(s.id)}</div>
                   {s.date && <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 400 }}>{s.date}</div>}
                 </th>
               ))}
-              <th style={{ textAlign: "center", color: "var(--indigo)" }}>요약</th>
+              <th onClick={() => clickSort("summary")} title="요약 기준 정렬" style={{ textAlign: "center", ...thSort, color: "var(--indigo)" }}>요약{caret("summary")}</th>
             </tr>
           </thead>
           <tbody>
-            {students.map((st, i) => (
+            {sortedStudents.map((st, i) => (
               <tr key={st.id}>
                 <td style={nameCellStyle}>
                   <span style={{ color: "var(--muted)", marginRight: 6 }} className="tnum">{i + 1}</span>
@@ -154,7 +201,7 @@ export default function DataTab() {
         </table>
       </div>
       <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 10 }}>
-        출결 요약 = 현장/출결기록 · 테스트 요약 = 평균점수 · 숙제 요약 = 평균 완성도. 숙제 65% 이하는 빨간색.
+        열 제목(이름·차시·요약)을 누르면 해당 기준으로 정렬되고, 다시 누르면 오름/내림차순이 바뀝니다. · 출결 요약 = 현장/출결기록 · 테스트 요약 = 평균점수 · 숙제 요약 = 평균 완성도. 숙제 65% 이하는 빨간색.
       </p>
     </>
   );
