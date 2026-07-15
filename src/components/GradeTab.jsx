@@ -79,6 +79,19 @@ export default function GradeTab() {
             </option>
           ))}
         </select>
+        {session && (
+          <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--ink2)" }}>
+            날짜
+            <input
+              className="tnum"
+              key={"date" + session.id}
+              defaultValue={session.date || ""}
+              placeholder="예: 7/21(월)"
+              style={{ width: 108, padding: "6px 8px" }}
+              onBlur={(e) => mutate(() => (session.date = e.target.value.trim()))}
+            />
+          </label>
+        )}
         <button className="btn" onClick={() => setUi({ newSess: !ui.newSess })}>+ 새 차시</button>
         {session && isOwner && (
           <button className="del" style={{ padding: "8px 12px" }} onClick={delSession}>차시 삭제</button>

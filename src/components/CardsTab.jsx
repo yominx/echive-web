@@ -124,8 +124,8 @@ export default function CardsTab() {
 
         <div className="summ">
           <div>
-            <b className="tnum" style={{ whiteSpace: "nowrap" }}>{latest ? `${latestChasi}차시 ${latest.date || ""}`.trim() : "–"}</b>
-            <span>최근 차시</span>
+            <b className="tnum" style={{ whiteSpace: "nowrap" }}>{latest ? latest.date || "날짜 없음" : "–"}</b>
+            <span>{latest ? `${latestChasi}차시` : "최근 차시"}</span>
           </div>
           <Summ label="평균 등수" value={avgRank == null ? "–" : one(avgRank)} unit="등" />
           <Summ label="평균 숙제 완성도" value={avgWb == null ? "–" : Math.round(avgWb)} unit="%" />
