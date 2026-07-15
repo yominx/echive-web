@@ -1,0 +1,184 @@
+// 순수 계산 로직 (원본 앱에서 이관, DOM 의존 없음)
+
+export const num = (v) => (v === "" || v == null || isNaN(+v) ? null : +v);
+export const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+export const pct = (v) => (v == null ? "–" : Math.round(v) + "%");
+export const one = (v) => (v == null ? "–" : Math.round(v * 10) / 10);
+export const rankText = (rank, total) => (rank ? `${rank} / ${total}` : "–");
+
+/* test scoring */
+export function effPoints(session) {
+  const t = session.test || {};
+  const n = num(t.qCount) || 0;
+  const total = num(session.testTotal) || 100;
+  const arr = [];
+  for (let i = 0; i < n; i++) {
+    const p = t.points && t.points[i] != null && t.points[i] !== "" ? num(t.points[i]) : null;
+    arr.push(p != null ? p : n ? total / n : 0);
+  }
+  return arr;
+}
+
+export const testMax = (session) => Math.round(effPoints(session).reduce((a, b) => a + b, 0) * 10) / 10;
+
+export function scoreOf(session, r) {
+  const t = session.test;
+  if (t && (num(t.qCount) || 0) > 0 && r.q) {
+    const pts = effPoints(session);
+    let has = false,
+      sum = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const mk = r.q[i];
+      if (mk === "1") {
+        sum += pts[i];
+        has = true;
+      } else if (mk === "0" || mk === "2") {
+        has = true;
+      }
+    }
+    if (has) return Math.round(sum * 10) / 10;
+  }
+  return num(r.testScore);
+}
+
+export function hwCount(session) {
+  const hw = session.hw;
+  if (!hw) return 0;
+  const s = num(hw.start),
+    e = num(hw.end);
+  if (s == null || e == null || e < s) return 0;
+  return e - s + 1;
+}
+
+export function hwRate(session, r) {
+  const n = hwCount(session);
+  if (!n || !r.hq) return null;
+  let done = 0;
+  for (let i = 0; i < n; i++) {
+    const mk = r.hq[i];
+    if (mk === "1" || mk === "2") done++;
+  }
+  return (done / n) * 100;
+}
+
+export function sessionStats(session, rec, students) {
+  const rows = students.map((s) => {
+    const r = rec[s.id] || {};
+    const score = scoreOf(session, r);
+    const wbRate = hwRate(session, r);
+    return { id: s.id, name: s.name, att: r.attendance || "", score, wbRate };
+  });
+  const scored = rows.filter((r) => r.score != null);
+  const scores = scored.map((r) => r.score).sort((a, b) => b - a);
+  const avg = mean(scores);
+  const topN = Math.max(1, Math.ceil(scores.length * 0.3));
+  const top30 = scores.length ? mean(scores.slice(0, topN)) : null;
+  const rankMap = {};
+  let rank = 0,
+    prev = null,
+    seen = 0;
+  [...scored]
+    .sort((a, b) => b.score - a.score)
+    .forEach((r) => {
+      seen++;
+      if (r.score !== prev) {
+        rank = seen;
+        prev = r.score;
+      }
+      rankMap[r.id] = rank;
+    });
+  const wbAvg = mean(rows.map((r) => r.wbRate).filter((x) => x != null));
+  return { rows, avg, top30, rankMap, wbAvg, graded: scored.length };
+}
+
+export function fillTemplate(tmpl, { student, session, row, rank, graded, avg, hw }) {
+  const map = {
+    "{이름}": student.name || "",
+    "{학교}": student.school || "",
+    "{차시}": session.chasi || "",
+    "{날짜}": session.date || "",
+    "{점수}": row.score == null ? "미응시" : row.score,
+    "{반평균}": avg == null ? "–" : Math.round(avg * 10) / 10,
+    "{등수}": rankText(rank, graded),
+    "{달성률}": row.wbRate == null ? "–" : Math.round(row.wbRate),
+    "{숙제}": hw || "–",
+  };
+  return tmpl
+    .replace(/\{이름\}|\{학교\}|\{차시\}|\{날짜\}|\{점수\}|\{반평균\}|\{등수\}|\{달성률\}|\{숙제\}/g, (k) => map[k])
+    .replace(/\[\s+/g, "[");
+}
+
+/* 명단 붙여넣기/엑셀 열 매핑 */
+export function pickCols(header) {
+  const idx = {};
+  header.forEach((h, i) => {
+    const s = String(h == null ? "" : h).replace(/\s/g, "");
+    if (/이름|성명/.test(s)) {
+      if (idx.name == null) idx.name = i;
+    } else if (/학교/.test(s)) {
+      if (idx.school == null) idx.school = i;
+    } else if (/학년|학년도/.test(s)) {
+      if (idx.grade == null) idx.grade = i;
+    } else if (/학부모|부모|보호자/.test(s)) {
+      if (idx.pp == null) idx.pp = i;
+    } else if (/학생.*(연락처|전화|번호|폰)|^학생$/.test(s)) {
+      if (idx.sp == null) idx.sp = i;
+    } else if (/연락처|전화|번호|휴대/.test(s)) {
+      if (idx.sp == null) idx.sp = i;
+      else if (idx.pp == null) idx.pp = i;
+    }
+  });
+  return idx;
+}
+
+// rows(2차원 배열) → 학생 객체 배열. classId, uid는 호출측에서 주입.
+export function parseRows(rows, classId, uid) {
+  if (!rows || !rows.length) return [];
+  const norm = (v) => String(v == null ? "" : v).trim();
+  let hi = rows.findIndex((r) => Array.isArray(r) && r.some((c) => /이름|성명/.test(norm(c))));
+  let cols, start;
+  if (hi >= 0) {
+    cols = pickCols(rows[hi]);
+    start = hi + 1;
+    if (cols.name == null) cols.name = 0;
+  } else {
+    cols = { name: 0, school: 1, grade: 2, sp: 3, pp: 4 };
+    start = 0;
+  }
+  const add = [];
+  for (let i = start; i < rows.length; i++) {
+    const r = rows[i];
+    if (!Array.isArray(r)) continue;
+    const name = norm(r[cols.name]);
+    if (!name || /^이름$|^성명$/.test(name)) continue;
+    add.push({
+      id: uid(),
+      classId,
+      name,
+      school: cols.school != null ? norm(r[cols.school]) : "",
+      grade: cols.grade != null ? norm(r[cols.grade]) : "",
+      studentPhone: cols.sp != null ? norm(r[cols.sp]) : "",
+      parentPhone: cols.pp != null ? norm(r[cols.pp]) : "",
+    });
+  }
+  return add;
+}
+
+export function copyText(t) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t);
+      return;
+    }
+  } catch {}
+  const ta = document.createElement("textarea");
+  ta.value = t;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+  } catch {}
+  document.body.removeChild(ta);
+}

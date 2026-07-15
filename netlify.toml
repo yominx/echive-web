@@ -1,9 +1,9 @@
-# Netlify 배포 설정 — 빌드 과정이 없는 정적 단일 파일 앱
+# Netlify 배포 설정 — Vite + React
 [build]
-  publish = "."
-  command = ""
+  command = "npm run build"
+  publish = "dist"
 
-# 어떤 경로로 들어와도 앱(index.html)을 보여줍니다.
+# SPA: 어떤 경로로 들어와도 앱을 보여줍니다.
 [[redirects]]
   from = "/*"
   to = "/index.html"
