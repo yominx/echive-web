@@ -29,6 +29,8 @@ export default function App() {
   const useAuth = !!(window.SHARE && window.SHARE.auth);
   const [phase, setPhase] = useState(useAuth ? "loading" : "boot");
   const [deniedEmail, setDeniedEmail] = useState("");
+  const [errCode, setErrCode] = useState("");
+  const [me, setMe] = useState({ email: "", owner: false });
   const [cloudOn, setCloudOn] = useState(false);
   const booted = useRef(false);
 
@@ -40,10 +42,15 @@ export default function App() {
       onRemote: (json) => applyRemote(json),
       onStatus: setCloudOn,
       onAuth: (state, info) => {
-        if (state === "ready") setPhase("ready");
-        else if (state === "denied") {
+        if (state === "ready") {
+          setMe({ email: info?.email || "", owner: !!info?.owner });
+          setPhase("ready");
+        } else if (state === "denied") {
           setDeniedEmail(info || "");
           setPhase("denied");
+        } else if (state === "error") {
+          setErrCode(info || "");
+          setPhase("error");
         } else setPhase("login");
       },
     });
@@ -68,7 +75,7 @@ export default function App() {
   }
 
   if (phase !== "ready") {
-    return <AuthGate state={phase === "loading" ? "loading" : phase} email={deniedEmail} />;
+    return <AuthGate state={phase === "loading" ? "loading" : phase} email={deniedEmail} code={errCode} />;
   }
 
   return (
@@ -91,7 +98,7 @@ export default function App() {
           )}
         </div>
       </main>
-      <Footer cloudOn={cloudOn} />
+      <Footer cloudOn={cloudOn} me={me} />
     </>
   );
 }

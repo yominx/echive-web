@@ -1,10 +1,13 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useStore } from "../store.jsx";
 import { makeSeed, emptyDB, migrate } from "../lib/db.js";
+import { logout } from "../lib/firebase.js";
+import AdminPanel from "./AdminPanel.jsx";
 
-export default function Footer({ cloudOn }) {
+export default function Footer({ cloudOn, me }) {
   const { db, replaceDb } = useStore();
   const fileRef = useRef(null);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   const onSeed = () => replaceDb(makeSeed());
 
@@ -49,12 +52,23 @@ export default function Footer({ cloudOn }) {
   };
 
   return (
+    <>
     <footer>
       <div className="wrap">
         <span className="noprint">
           {cloudOn ? "🟢 공유 중 · 모든 선생님이 같은 데이터를 실시간으로 사용합니다" : "이 브라우저에 저장됩니다 (공유 미설정)"}
         </span>
         <span className="foot-btns">
+          {me?.owner && (
+            <button className="btn line" style={{ padding: "7px 12px" }} onClick={() => setShowAdmin(true)}>
+              선생님 관리
+            </button>
+          )}
+          {me?.email && (
+            <button className="del" style={{ padding: "7px 12px" }} onClick={() => logout()} title={me.email}>
+              로그아웃
+            </button>
+          )}
           {db.classes.length === 0 && (
             <button className="btn dark" onClick={onSeed}>
               예시 데이터 채우기
@@ -73,5 +87,7 @@ export default function Footer({ cloudOn }) {
         </span>
       </div>
     </footer>
+    {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
+    </>
   );
 }

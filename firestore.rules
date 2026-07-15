@@ -1,10 +1,30 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 학원 공유 데이터: 로그인한 사용자만 읽기/쓰기 허용.
-    // 앱은 academy/data 문서 하나에 전체 상태(JSON)를 저장합니다.
+
+    // 주인(관리자) 이메일 — index.html 의 window.SHARE.owner 와 동일하게 유지하세요.
+    // 보안 규칙은 클라이언트 설정을 읽을 수 없어, 주인 이메일은 여기에도 한 번 적어야 합니다.
+    function isOwner() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['dlgur2419304@gmail.com'];
+    }
+
+    // 허용된 선생님 = 주인이거나, teachers 컬렉션에 이메일 문서가 있는 경우
+    function isTeacher() {
+      return request.auth != null && request.auth.token.email_verified == true
+        && (isOwner() || exists(/databases/$(database)/documents/teachers/$(request.auth.token.email)));
+    }
+
+    // 학원 공유 데이터: 허용된 선생님만 읽기/쓰기
     match /academy/{docId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isTeacher();
+    }
+
+    // 선생님 명단: 로그인 사용자는 자기 접근권한 확인용으로 읽기 가능, 추가/삭제는 주인만
+    match /teachers/{email} {
+      allow read: if request.auth != null;
+      allow write: if isOwner();
     }
   }
 }

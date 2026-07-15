@@ -1,7 +1,10 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
+import { getFirestore, doc, onSnapshot, setDoc, deleteDoc, getDoc, collection } from "firebase/firestore";
 
 let cloud = null;
+let _fs = null; // firestore 인스턴스
+let _currentUser = null;
+
 export function getCloud() {
   return cloud;
 }
@@ -11,12 +14,44 @@ export function login() {
 export function logout() {
   if (window.__logout) window.__logout();
 }
+export function currentUser() {
+  return _currentUser;
+}
 
-// onRemote(jsonStr): 클라우드에서 갱신 수신
-// onStatus(bool): 공유 연결 상태
-// onAuth(state, info): "login" | "denied" | "ready"  (auth 사용 시에만 호출)
+// 주인(관리자) 이메일 목록 — index.html 의 window.SHARE.owner (문자열 또는 배열)
+export function owners() {
+  const o = window.SHARE && window.SHARE.owner;
+  const arr = Array.isArray(o) ? o : o ? [o] : [];
+  return arr.map((e) => String(e).toLowerCase().trim()).filter(Boolean);
+}
+export function isOwnerEmail(email) {
+  return owners().includes(String(email || "").toLowerCase().trim());
+}
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+// 선생님(접근 허용) 목록 실시간 구독. 반환값은 구독 해제 함수.
+export function subscribeTeachers(cb) {
+  if (!_fs) return () => {};
+  return onSnapshot(
+    collection(_fs, "teachers"),
+    (snap) => cb(snap.docs.map((d) => ({ email: d.id, ...d.data() }))),
+    (err) => console.error("선생님 목록 오류:", err)
+  );
+}
+export async function addTeacher(email) {
+  const e = String(email || "").toLowerCase().trim();
+  if (!EMAIL_RE.test(e)) throw new Error("이메일 형식이 올바르지 않습니다.");
+  if (isOwnerEmail(e)) throw new Error("이미 주인 계정입니다.");
+  await setDoc(doc(_fs, "teachers", e), { addedAt: Date.now(), addedBy: _currentUser?.email || "" });
+}
+export async function removeTeacher(email) {
+  await deleteDoc(doc(_fs, "teachers", String(email || "").toLowerCase().trim()));
+}
+
+// onRemote(jsonStr) / onStatus(bool) / onAuth(state, info)
+//   state: "loading" | "login" | "denied"(info=email) | "error"(info=code) | "ready"(info={email,owner})
 export function initFirebase({ onRemote, onStatus, onAuth }) {
-  let started = false;
   try {
     const cfg = window.SHARE && window.SHARE.firebase;
     if (!(cfg && cfg.apiKey && cfg.projectId)) {
@@ -25,6 +60,7 @@ export function initFirebase({ onRemote, onStatus, onAuth }) {
     }
     const app = initializeApp(cfg);
     const dbf = getFirestore(app);
+    _fs = dbf;
     const ref = doc(dbf, "academy", "data");
 
     let cloudStarted = false;
@@ -55,35 +91,51 @@ export function initFirebase({ onRemote, onStatus, onAuth }) {
     }
 
     if (window.SHARE.auth) {
-      import("firebase/auth").then(
-        ({ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence }) => {
-          const auth = getAuth(app);
-          setPersistence(auth, browserLocalPersistence).catch(() => {});
-          const provider = new GoogleAuthProvider();
-          provider.setCustomParameters({ prompt: "select_account" });
-          window.__login = () =>
-            signInWithPopup(auth, provider).catch((e) => {
-              console.error("로그인 오류:", e);
-              onAuth("login");
-              if (e && e.code) alert("로그인에 실패했습니다: " + e.code);
-            });
-          window.__logout = () => signOut(auth);
-          onAuthStateChanged(auth, (user) => {
-            if (!user) {
+      import("firebase/auth").then(async (M) => {
+        const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } = M;
+        const auth = getAuth(app);
+        await setPersistence(auth, browserLocalPersistence).catch(() => {});
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+
+        window.__login = () =>
+          signInWithPopup(auth, provider).catch((e) => {
+            const code = (e && e.code) || "";
+            // 사용자가 팝업을 닫은 경우는 오류 화면 대신 로그인 화면 유지
+            if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
               onAuth("login");
               return;
             }
-            const allow = (window.SHARE.allow || []).map((e) => String(e).toLowerCase().trim()).filter(Boolean);
-            const email = (user.email || "").toLowerCase();
-            if (allow.length && allow.includes(email)) {
-              startCloud();
-              onAuth("ready");
-            } else {
-              onAuth("denied", user.email || "");
-            }
+            console.error("로그인 오류:", e);
+            onAuth("error", code);
           });
-        }
-      );
+        window.__logout = () => signOut(auth);
+
+        onAuthStateChanged(auth, async (user) => {
+          _currentUser = user || null;
+          if (!user) {
+            onAuth("login");
+            return;
+          }
+          const email = (user.email || "").toLowerCase();
+          const owner = isOwnerEmail(email);
+          let allowed = owner;
+          if (!allowed) {
+            try {
+              const snap = await getDoc(doc(dbf, "teachers", email));
+              allowed = snap.exists();
+            } catch (err) {
+              console.error("권한 확인 오류:", err);
+            }
+          }
+          if (allowed) {
+            startCloud();
+            onAuth("ready", { email: user.email, owner });
+          } else {
+            onAuth("denied", user.email || "");
+          }
+        });
+      });
     } else {
       startCloud();
     }
@@ -91,5 +143,4 @@ export function initFirebase({ onRemote, onStatus, onAuth }) {
     console.error("Firebase 초기화 오류:", e);
     onStatus(false);
   }
-  return started;
 }

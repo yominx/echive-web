@@ -6,7 +6,9 @@
 - **데이터 저장**: 기본은 브라우저 `localStorage`. `index.html` 상단의
   `window.SHARE` 설정을 채우면 Firebase Firestore로 여러 선생님이
   실시간 공유합니다.
-- **로그인/접근 제어**: 구글 로그인 + 이메일 허용목록(`SHARE.allow`).
+- **로그인/접근 제어**: 구글 로그인. 접근 허용 계정은 **앱 안 "선생님
+  관리"** 에서 주인(관리자)이 추가/삭제하며, 목록은 Firebase(Firestore)에
+  저장됩니다. 주인 계정만 `index.html` 의 `window.SHARE.owner` 에 지정.
 - **번들**: Firebase는 메인 번들에, 엑셀 파서(SheetJS)는 명단 업로드 시에만
   로드되도록 코드 분할돼 있습니다.
 
@@ -81,13 +83,40 @@ Authentication → Settings → Authorized domains** 에 추가하세요.
 
 ---
 
-## 운영 설정 체크리스트
+## 접근 권한(선생님) 관리
 
-- **접속 허용 계정**: `index.html` 의 `window.SHARE.allow` 배열에서
-  구글 이메일을 추가/삭제합니다. (수정 후 재빌드·재배포 필요)
-- **Firestore 보안 규칙**: 실시간 공유가 안 되면 Firebase 콘솔 →
-  Firestore → Rules 에서 `academy/data` 문서에 대한 읽기/쓰기가
-  허용돼 있는지 확인하세요. `firestore.rules` 를
-  `firebase deploy --only firestore:rules` 로 올릴 수 있습니다.
+계정 관리는 **Firebase 한 곳**에서 이뤄집니다. 하드코딩된 허용 목록은
+없습니다.
+
+1. **주인(관리자)** 은 `index.html` 의 `window.SHARE.owner` 에 지정된
+   계정입니다. (여러 명이면 배열) 이 값은 **보안 규칙**에도 동일하게
+   있어야 하므로 `firestore.rules` 의 `isOwner()` 안 이메일도 함께
+   맞춰주세요.
+2. 주인으로 로그인하면 화면 하단 **"선생님 관리"** 버튼이 보입니다.
+   여기서 선생님 구글 이메일을 추가/삭제하면 **Firestore `teachers`
+   컬렉션**에 저장되고, 재배포 없이 즉시 반영됩니다.
+3. 등록되지 않은 계정으로 로그인하면 "접근 권한이 없습니다" 안내
+   화면이 뜹니다.
+
+### Firestore 보안 규칙 배포 (최초 1회 필수)
+
+`teachers` 기반 접근제어가 동작하려면 `firestore.rules` 를 반드시
+올려야 합니다.
+
+```bash
+npm install -g firebase-tools
+firebase login
+firebase deploy --only firestore:rules
+```
+
+또는 Firebase 콘솔 → Firestore → **Rules** 탭에 `firestore.rules`
+내용을 붙여넣고 **게시**합니다.
+
+## 운영 체크리스트
+
+- **로그인이 `auth/unauthorized-domain` 으로 막힐 때**: 지금 접속한
+  도메인(예: `xxxx.netlify.app`)을 Firebase 콘솔 → Authentication →
+  Settings → **Authorized domains** 에 추가하세요. (오류 화면에도 현재
+  주소가 안내됩니다.)
 - **백업**: 앱 하단 "백업 저장 / 백업 복원" 버튼으로 JSON을 내려받고
   복원할 수 있습니다.

@@ -20,16 +20,13 @@
       messagingSenderId: "830267104920",
       appId: "1:830267104920:web:b411eb51063e87a92b3aed"
     },
-    code: "dlzkdlqm2347^^",  // 접속 코드 (auth:false 일 때만 사용)
-
-    // 구글 로그인 사용 여부. true 로 두면 아래 allow 목록의 구글 계정만 접속 가능.
+    // 구글 로그인 사용 여부.
     auth: true,
-    // 승인된 구글 계정(이메일) 목록. 여기에 있는 계정만 로그인·접속됩니다.
-    allow: [
-      "dlgur2419304@gmail.com",   // 주인
-      "echiveast@gmail.com",
-      "wjsk38@gmail.com"
-    ]
+
+    // 주인(관리자) 계정. 이 계정으로 로그인하면 앱 안 "선생님 관리"에서
+    // 다른 선생님을 추가/삭제할 수 있습니다(목록은 Firebase에 저장).
+    // 여러 명을 주인으로 두려면 배열로: owner: ["a@x.com", "b@y.com"]
+    owner: "dlgur2419304@gmail.com"
   };
 </script>
 </head>

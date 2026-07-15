@@ -34,7 +34,33 @@ const LoginBtn = () => (
   </button>
 );
 
-export default function AuthGate({ state, email }) {
+function ErrorBody({ code }) {
+  const host = typeof location !== "undefined" ? location.host : "";
+  const isDomain = code === "auth/unauthorized-domain";
+  return (
+    <div style={{ textAlign: "center", maxWidth: 380, padding: 24 }}>
+      <Logo />
+      <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 10 }}>로그인을 완료할 수 없습니다</div>
+      {isDomain ? (
+        <div style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.7, marginBottom: 22 }}>
+          현재 접속 주소 <b style={{ color: "#e2e8f0" }}>{host}</b> 가 아직 승인되지 않았습니다.
+          <br />
+          관리자가 <b style={{ color: "#e2e8f0" }}>Firebase 콘솔 → Authentication → Settings → 승인된 도메인</b> 에 이 주소를 추가하면 바로 로그인됩니다.
+        </div>
+      ) : (
+        <div style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.7, marginBottom: 22 }}>
+          로그인 중 오류가 발생했습니다.
+          {code ? <><br /><span style={{ color: "#e2e8f0", fontFamily: "ui-monospace,monospace" }}>{code}</span></> : null}
+          <br />
+          잠시 후 다시 시도해 주세요.
+        </div>
+      )}
+      <LoginBtn />
+    </div>
+  );
+}
+
+export default function AuthGate({ state, email, code }) {
   return (
     <div
       style={{
@@ -77,6 +103,7 @@ export default function AuthGate({ state, email }) {
           <LoginBtn />
         </div>
       )}
+      {state === "error" && <ErrorBody code={code} />}
     </div>
   );
 }
