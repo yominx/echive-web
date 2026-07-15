@@ -140,9 +140,9 @@ export default function CardsTab() {
           />
           <div>
             <b className="tnum" style={{ color: latestAtt === "현장" ? "var(--emerald)" : latestAtt ? "var(--rose)" : undefined }}>
-              {latestAtt ? (latestAtt === "Tx" ? "결석" : latestAtt) : "–"}
+              {latestAtt === "현장" ? "O" : latestAtt ? "X" : "–"}
             </b>
-            <span>이번 차시 출석</span>
+            <span>이번 차시 출석여부</span>
           </div>
         </div>
 
@@ -152,12 +152,12 @@ export default function CardsTab() {
           </div>
         ) : (
           <>
-            <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 22px 0" }}>
-              <span style={{ fontSize: 11, color: "var(--muted)" }}>최근 5차시</span>
-            </div>
-            <div className="charts" style={{ paddingTop: 8 }}>
+            <div className="charts">
               <div>
-                <div className="chart-t">테스트 점수 vs 반평균</div>
+                <div className="chart-t" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  테스트 점수 vs 반평균
+                  <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}>최근 5차시</span>
+                </div>
                 <BarAvgChart data={view} valueKey="score" avgKey="avg" />
                 <div className="legend">
                   <span><i style={{ background: "var(--indigo)" }} />학생</span>
@@ -165,7 +165,10 @@ export default function CardsTab() {
                 </div>
               </div>
               <div>
-                <div className="chart-t">숙제 달성률 vs 반평균 (%)</div>
+                <div className="chart-t" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  숙제 달성률 vs 반평균 (%)
+                  <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}>최근 5차시</span>
+                </div>
                 <BarAvgChart data={view} valueKey="wbRate" avgKey="wbAvg" />
                 <div className="legend">
                   <span><i style={{ background: "var(--indigo)" }} />학생</span>

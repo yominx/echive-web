@@ -60,9 +60,14 @@ export default function ClassBar() {
               {c.name}
               <span className="cnt tnum">{cnt}</span>
               {on && isOwner && (
-                <span className="x" title="보관함으로 이동" style={{ fontSize: 11 }} onClick={(e) => { e.stopPropagation(); archiveCls(c); }}>
-                  보관
-                </span>
+                <>
+                  <span className="x" title="보관함으로 이동" style={{ fontSize: 11 }} onClick={(e) => { e.stopPropagation(); archiveCls(c); }}>
+                    보관
+                  </span>
+                  <span className="x" title="반 완전 삭제" style={{ fontSize: 11 }} onClick={(e) => { e.stopPropagation(); deleteCls(c); }}>
+                    삭제
+                  </span>
+                </>
               )}
             </button>
           );

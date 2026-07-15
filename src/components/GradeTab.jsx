@@ -68,7 +68,7 @@ export default function GradeTab() {
   return (
     <div ref={bodyRef}>
       <h2>출결 · 채점</h2>
-      <p className="desc">차시를 고르거나 새로 만든 뒤, 출결·워크북을 입력하고 아래 테스트 채점표에서 O/X를 체크하면 총점·등수가 자동 계산됩니다.</p>
+      <p className="desc" style={{ maxWidth: "none" }}>차시를 고르거나 새로 만든 뒤, 출결·워크북을 입력하고 아래 테스트 채점표에서 O/X를 체크하면 총점·등수가 자동 계산됩니다.</p>
 
       <div className="row" style={{ marginBottom: 8 }}>
         <select style={{ minWidth: 190 }} value={session ? session.id : ""} onChange={(e) => setUi({ sess: e.target.value || null })}>

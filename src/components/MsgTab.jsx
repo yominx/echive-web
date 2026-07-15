@@ -63,7 +63,7 @@ export default function MsgTab() {
   return (
     <>
       <h2>안내 · 숙제</h2>
-      <p className="desc">차시별 숙제와 안내문자를 준비합니다. 학생마다 점수·등수·달성률이 자동으로 채워진 문자를 복사해 카카오톡·문자로 보내세요.</p>
+      <p className="desc" style={{ maxWidth: "none" }}>차시별 숙제와 안내문자를 준비합니다. 학생마다 점수·등수·달성률이 자동으로 채워진 문자를 복사해 카카오톡·문자로 보내세요.</p>
 
       <div className="panel pad" style={{ marginBottom: 16 }}>
         <div className="row" style={{ marginBottom: 12 }}>
