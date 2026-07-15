@@ -10,6 +10,7 @@ import RosterTab from "./components/RosterTab.jsx";
 import GradeTab from "./components/GradeTab.jsx";
 import CardsTab from "./components/CardsTab.jsx";
 import MsgTab from "./components/MsgTab.jsx";
+import DataTab from "./components/DataTab.jsx";
 
 // 접속 코드 게이트(auth 미사용 시)
 function gate() {
@@ -94,6 +95,8 @@ export default function App() {
             <GradeTab />
           ) : ui.tab === "card" ? (
             <CardsTab />
+          ) : ui.tab === "data" ? (
+            isOwner ? <DataTab /> : <div className="empty">종합 DATA는 주인(관리자)만 볼 수 있습니다.</div>
           ) : (
             <MsgTab />
           )}

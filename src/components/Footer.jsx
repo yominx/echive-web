@@ -14,7 +14,7 @@ export default function Footer({ cloudOn }) {
   const togglePreview = () => {
     const next = !viewAsTeacher;
     setViewAsTeacher(next);
-    if (next && ui.tab === "roster") setUi({ tab: "grade" }); // 선생님은 명단 탭이 없음
+    if (next && (ui.tab === "roster" || ui.tab === "data")) setUi({ tab: "grade" }); // 선생님은 이 탭들이 없음
   };
 
   const onSeed = () => replaceDb(makeSeed(), true, "예시 데이터 채우기");
