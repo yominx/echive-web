@@ -80,14 +80,20 @@ export default function CardsTab() {
       wbAvg: st.wbAvg == null ? null : Math.round(st.wbAvg),
     };
   });
-  // 상단 요약 타일: 전체 차시 반영 / 그래프·표: 최근 5차시만
+  // ② 에서 고른 차시(ui.sess)에 맞춤. 없으면 마지막 채점 차시.
+  const graded = sessions.filter((s) => db.records[s.id] && Object.keys(db.records[s.id]).length);
+  const defId = (graded.length ? graded[graded.length - 1] : sessions[sessions.length - 1])?.id;
+  const curId = ui.sess && sessions.some((s) => s.id === ui.sess) ? ui.sess : defId;
+  const curIdx = sessions.findIndex((s) => s.id === curId);
+
+  // 상단 "이번 차시" = 선택 차시 / 그래프·표: 선택 차시까지 최근 5차시 / 전체 평균: 전체 차시
   const all = timeline;
-  const view = timeline.slice(-5);
+  const view = curIdx >= 0 ? timeline.slice(Math.max(0, curIdx - 4), curIdx + 1) : [];
   const avgRank = mean(all.filter((t) => t.rank != null).map((t) => t.rank));
   const avgWb = mean(all.filter((t) => t.wbRate != null).map((t) => t.wbRate));
   const attend = all.filter((t) => t.att === "현장").length;
   const attendTotal = all.filter((t) => t.att !== "").length;
-  const latest = all[all.length - 1];
+  const latest = curIdx >= 0 ? timeline[curIdx] : null;
   const latestChasi = latest ? String(latest.chasi).replace("차시", "") : "–";
   const latestAtt = latest ? latest.att : "";
 

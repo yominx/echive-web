@@ -40,7 +40,7 @@ export default function MsgTab() {
 
   const graded = sessions.filter((s) => db.records[s.id] && Object.keys(db.records[s.id]).length);
   const defId = (graded.length ? graded[graded.length - 1] : sessions[sessions.length - 1]).id;
-  const sessId = ui.msgSess && sessions.some((s) => s.id === ui.msgSess) ? ui.msgSess : defId;
+  const sessId = ui.sess && sessions.some((s) => s.id === ui.sess) ? ui.sess : defId;
   const session = sessions.find((s) => s.id === sessId);
   const st = sessionStats(session, recOf(session.id), students);
   const tmpl = db.settings.tmpl;
@@ -67,7 +67,7 @@ export default function MsgTab() {
 
       <div className="panel pad" style={{ marginBottom: 16 }}>
         <div className="row" style={{ marginBottom: 12 }}>
-          <select style={{ minWidth: 190 }} value={session.id} onChange={(e) => setUi({ msgSess: e.target.value })}>
+          <select style={{ minWidth: 190 }} value={session.id} onChange={(e) => setUi({ sess: e.target.value })}>
             {sessions.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.chasi}차시 {s.date ? "· " + s.date : ""}
@@ -133,7 +133,7 @@ export default function MsgTab() {
               <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
                 <div>
                   <b style={{ fontWeight: 700 }}>{s.name}</b>{" "}
-                  <span style={{ fontSize: 12, color: "var(--muted)" }}>{s.parentPhone || "연락처 없음"}</span>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>{[s.school, s.grade].filter(Boolean).join(" · ") || "정보 없음"}</span>
                 </div>
                 <CopyButton className="btn line sm" text={() => msg}>
                   복사
