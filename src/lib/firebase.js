@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, onSnapshot, setDoc, deleteDoc, getDoc, collection } from "firebase/firestore";
+import { getFirestore, doc, onSnapshot, setDoc, deleteDoc, getDoc, collection, addDoc, query, orderBy, limit } from "firebase/firestore";
 
 let cloud = null;
 let _fs = null; // firestore 인스턴스
@@ -47,6 +47,24 @@ export async function addTeacher(email) {
 }
 export async function removeTeacher(email) {
   await deleteDoc(doc(_fs, "teachers", String(email || "").toLowerCase().trim()));
+}
+
+// 활동 로그 — 누가 무엇을 바꿨는지. 추가만 가능(규칙으로 강제), 열람은 주인만.
+export async function writeLog(email, name, items) {
+  if (!_fs || !items || !items.length) return;
+  try {
+    await addDoc(collection(_fs, "logs"), { email, name: name || "", at: Date.now(), items });
+  } catch (e) {
+    console.error("로그 기록 오류:", e);
+  }
+}
+export function subscribeLogs(cb, max = 300) {
+  if (!_fs) return () => {};
+  return onSnapshot(
+    query(collection(_fs, "logs"), orderBy("at", "desc"), limit(max)),
+    (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    (err) => console.error("로그 조회 오류:", err)
+  );
 }
 
 // onRemote(jsonStr) / onStatus(bool) / onAuth(state, info)

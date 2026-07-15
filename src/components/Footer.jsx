@@ -3,13 +3,15 @@ import { useStore } from "../store.jsx";
 import { makeSeed, emptyDB, migrate } from "../lib/db.js";
 import { logout } from "../lib/firebase.js";
 import AdminPanel from "./AdminPanel.jsx";
+import LogPanel from "./LogPanel.jsx";
 
 export default function Footer({ cloudOn, me }) {
   const { db, replaceDb } = useStore();
   const fileRef = useRef(null);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showLog, setShowLog] = useState(false);
 
-  const onSeed = () => replaceDb(makeSeed());
+  const onSeed = () => replaceDb(makeSeed(), true, "예시 데이터 채우기");
 
   const onReset = () => {
     const phrase = "초기화를 진행하겠습니다";
@@ -20,7 +22,7 @@ export default function Footer({ cloudOn, me }) {
       alert("문구가 일치하지 않아 초기화를 취소했습니다.");
       return;
     }
-    replaceDb(emptyDB());
+    replaceDb(emptyDB(), true, "전체 초기화");
     alert("초기화되었습니다.");
   };
 
@@ -40,7 +42,7 @@ export default function Footer({ cloudOn, me }) {
       try {
         const data = JSON.parse(rd.result);
         if (data && data.classes && data.students) {
-          replaceDb(migrate(data));
+          replaceDb(migrate(data), true, "백업 복원");
           alert("백업을 복원했습니다.");
         } else alert("올바른 백업 파일이 아닙니다.");
       } catch {
@@ -59,6 +61,11 @@ export default function Footer({ cloudOn, me }) {
           {cloudOn ? "🟢 공유 중 · 모든 선생님이 같은 데이터를 실시간으로 사용합니다" : "이 브라우저에 저장됩니다 (공유 미설정)"}
         </span>
         <span className="foot-btns">
+          {me?.owner && (
+            <button className="btn line" style={{ padding: "7px 12px" }} onClick={() => setShowLog(true)}>
+              활동 로그
+            </button>
+          )}
           {me?.owner && (
             <button className="btn line" style={{ padding: "7px 12px" }} onClick={() => setShowAdmin(true)}>
               선생님 관리
@@ -88,6 +95,7 @@ export default function Footer({ cloudOn, me }) {
       </div>
     </footer>
     {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
+    {showLog && <LogPanel onClose={() => setShowLog(false)} />}
     </>
   );
 }
