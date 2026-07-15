@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useStore } from "../store.jsx";
 import { ATT } from "../lib/constants.js";
 import { uid } from "../lib/db.js";
-import { num, one, pct, rankText, effPoints, testMax, scoreOf, hwCount, sessionStats, dateMismatch } from "../lib/calc.js";
-import SessionGenerator from "./SessionGenerator.jsx";
+import { num, one, pct, rankText, effPoints, testMax, scoreOf, hwCount, hwItems, hwRangesOf, sessionStats, dateMismatch } from "../lib/calc.js";
 
 const Mini = ({ label, value }) => (
   <div className="mini">
@@ -18,7 +17,6 @@ export default function GradeTab() {
   const { db, ui, setUi, mutate, recOf, recFor, isOwner } = useStore();
   const bodyRef = useRef(null);
   const [nf, setNf] = useState(NEW_BLANK);
-  const [showGen, setShowGen] = useState(false);
 
   const students = db.students.filter((s) => s.classId === ui.classId);
   const sessions = db.sessions
@@ -40,16 +38,10 @@ export default function GradeTab() {
   }, [session, mutate]);
 
   const header = (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
-        <div>
-          <h2>출결 · 채점</h2>
-          <p className="desc" style={{ maxWidth: "none" }}>차시를 고르거나 새로 만든 뒤, 출결·워크북을 입력하고 아래 테스트 채점표에서 O/X를 체크하면 총점·등수가 자동 계산됩니다.</p>
-        </div>
-        <button className="btn line" onClick={() => setShowGen(true)}>📅 차시 생성기</button>
-      </div>
-      {showGen && <SessionGenerator onClose={() => setShowGen(false)} />}
-    </>
+    <div>
+      <h2>출결 · 채점</h2>
+      <p className="desc" style={{ maxWidth: "none" }}>차시를 고르거나 새로 만든 뒤, 출결·워크북을 입력하고 아래 테스트 채점표에서 O/X를 체크하면 총점·등수가 자동 계산됩니다.</p>
+    </div>
   );
 
   if (students.length === 0)
@@ -68,7 +60,7 @@ export default function GradeTab() {
       classId: ui.classId,
       chasi,
       date: nf.date.trim(),
-      hw: { start: nf.hs.trim(), end: nf.he.trim() },
+      hwRanges: [{ start: nf.hs.trim(), end: nf.he.trim(), req: true }],
       testTotal: nf.tt.trim() || "100",
       test: { qCount: num(nf.q) || 20, points: [] },
     };
@@ -91,14 +83,11 @@ export default function GradeTab() {
       {header}
 
       <div className="row" style={{ marginBottom: 8 }}>
-        <select style={{ minWidth: 190 }} value={session ? session.id : ""} onChange={(e) => setUi({ sess: e.target.value || null })}>
-          <option value="">차시 선택…</option>
-          {sessions.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.chasi}차시 {s.date ? "· " + s.date : ""}
-            </option>
-          ))}
-        </select>
+        {session ? (
+          <b style={{ fontSize: 15 }}>{session.chasi}차시</b>
+        ) : (
+          <span style={{ color: "var(--muted)", fontSize: 13 }}>차시를 선택하세요 (상단 오른쪽 차시 선택)</span>
+        )}
         {session && (
           <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--ink2)" }}>
             날짜
@@ -162,10 +151,9 @@ function GradeBody({ bodyRef, session, students, store }) {
   const boost = st.rows.filter((r) => r.wbRate != null && r.wbRate <= 65).length;
   const qn = num(session.test?.qCount) || 0;
   const pts = effPoints(session);
-  const hwS = num(session.hw?.start),
-    hwE = num(session.hw?.end);
-  const hn = hwCount(session);
-  const hwLabel = (i) => (hwS != null ? hwS + i : i + 1);
+  const hwItemList = hwItems(session);
+  const hn = hwItemList.length;
+  const hwRanges = hwRangesOf(session);
   const mx = testMax(session);
   const target = num(session.testTotal) || 100;
 
@@ -226,10 +214,14 @@ function GradeBody({ bodyRef, session, students, store }) {
   const hwKey = gridKey("hwin", "hq", hn, (k) => (k === "1" || k === "2" ? k : null));
   const oxKey = gridKey("oxin", "q", qn, (k) => (k === "0" || k === "1" || k === "2" ? k : null));
 
-  const setHwRange = (which, val) =>
-    mutate(() => {
-      session.hw = { start: which === "s" ? val : String(hwS ?? ""), end: which === "e" ? val : String(hwE ?? "") };
-    });
+  const ensureRanges = (sess) => {
+    if (!Array.isArray(sess.hwRanges)) sess.hwRanges = hwRangesOf(sess).map((r) => ({ ...r }));
+    return sess.hwRanges;
+  };
+  const setRange = (i, key, val) => mutate(() => { const rs = ensureRanges(session); if (rs[i]) rs[i][key] = val; });
+  const toggleReq = (i) => mutate(() => { const rs = ensureRanges(session); if (rs[i]) rs[i].req = rs[i].req === false; });
+  const addRange = () => mutate(() => ensureRanges(session).push({ start: "", end: "", req: true }));
+  const removeRange = (i) => mutate(() => ensureRanges(session).splice(i, 1));
 
   const setQCount = (val) => {
     const n = Math.max(0, Math.min(100, num(val) || 0));
@@ -261,12 +253,13 @@ function GradeBody({ bodyRef, session, students, store }) {
         <span className="n">A</span>출결
       </div>
       <div className="panel scroll">
-        <table style={{ minWidth: 380 }}>
+        <table style={{ minWidth: 520 }}>
           <thead>
             <tr>
               <th>#</th>
               <th>이름</th>
               <th>출결</th>
+              <th>비고</th>
             </tr>
           </thead>
           <tbody>
@@ -276,12 +269,21 @@ function GradeBody({ bodyRef, session, students, store }) {
                 <tr key={s.id}>
                   <td className="tnum" style={{ color: "var(--muted)" }}>{i + 1}</td>
                   <td style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{s.name}</td>
-                  <td>
+                  <td style={{ whiteSpace: "nowrap" }}>
                     {ATT.map((a) => (
                       <button key={a} className={"att-btn" + (r.attendance === a ? " att-" + a : "")} onClick={() => setAtt(s.id, a)} style={{ marginRight: 4 }}>
                         {a}
                       </button>
                     ))}
+                  </td>
+                  <td>
+                    <input
+                      key={"note" + session.id + s.id}
+                      defaultValue={r.note || ""}
+                      placeholder="메모"
+                      style={{ width: "100%", minWidth: 180, padding: "5px 8px", fontSize: 12 }}
+                      onBlur={(e) => mutate(() => (recFor(session.id, s.id).note = e.target.value))}
+                    />
                   </td>
                 </tr>
               );
@@ -291,18 +293,31 @@ function GradeBody({ bodyRef, session, students, store }) {
       </div>
 
       {/* B. 숙제 채점 */}
-      <div className="sec-t" style={{ justifyContent: "space-between" }}>
+      <div className="sec-t" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span className="n">B</span>숙제 채점
         </span>
-        <span style={{ fontWeight: 500, fontSize: 13, color: "var(--ink2)" }}>
-          숙제 범위
-          <input className="tnum" style={{ width: 52, padding: "5px 8px", margin: "0 4px" }} defaultValue={hwS ?? ""} placeholder="시작" key={"hs" + session.id} onBlur={(e) => setHwRange("s", e.target.value.trim())} /> ~
-          <input className="tnum" style={{ width: 52, padding: "5px 8px", margin: "0 4px" }} defaultValue={hwE ?? ""} placeholder="끝" key={"he" + session.id} onBlur={(e) => setHwRange("e", e.target.value.trim())} /> · {hn}문항
+        <span style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", fontWeight: 500, fontSize: 13, color: "var(--ink2)" }}>
+          {hwRanges.map((rg, i) => (
+            <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 3, border: "1px solid var(--line)", borderRadius: 8, padding: "3px 6px" }}>
+              <input className="tnum" style={{ width: 40, padding: "3px 5px" }} defaultValue={rg.start ?? ""} placeholder="시작" key={"rs" + session.id + i} onBlur={(e) => setRange(i, "start", e.target.value.trim())} />~
+              <input className="tnum" style={{ width: 40, padding: "3px 5px" }} defaultValue={rg.end ?? ""} placeholder="끝" key={"re" + session.id + i} onBlur={(e) => setRange(i, "end", e.target.value.trim())} />
+              <button
+                onClick={() => toggleReq(i)}
+                title="필수/선택 전환 (선택은 완성도 제외)"
+                style={{ fontSize: 11, fontWeight: 700, padding: "2px 6px", borderRadius: 6, border: "1px solid", borderColor: rg.req !== false ? "#c7d2fe" : "var(--line)", background: rg.req !== false ? "#eef2ff" : "#fff", color: rg.req !== false ? "var(--indigo-d)" : "var(--muted)" }}
+              >
+                {rg.req !== false ? "필수" : "선택"}
+              </button>
+              <span style={{ color: "#cbd5e1", cursor: "pointer", fontSize: 13 }} title="범위 삭제" onClick={() => removeRange(i)}>×</span>
+            </span>
+          ))}
+          <button className="btn line sm" onClick={addRange}>+ 범위 추가</button>
+          <span style={{ color: "var(--muted)", fontSize: 12 }}>· {hn}문항</span>
         </span>
       </div>
       {hn === 0 ? (
-        <div className="empty">위에 숙제 범위(시작~끝 번호)를 입력하면 그만큼 채점 칸이 생깁니다.</div>
+        <div className="empty">「+ 범위 추가」로 숙제 범위를 넣으면 채점 칸이 생깁니다. (예: 1~5, 12~15 · 각 범위마다 필수/선택 지정)</div>
       ) : (
         <>
           <div className="panel scroll">
@@ -311,9 +326,10 @@ function GradeBody({ bodyRef, session, students, store }) {
                 <tr>
                   <th>#</th>
                   <th>이름</th>
-                  {Array.from({ length: hn }, (_, j) => (
-                    <th key={j} className="qhead">
-                      <b>{hwLabel(j)}</b>
+                  {hwItemList.map((it, j) => (
+                    <th key={j} className="qhead" title={it.req ? "필수" : "선택 (완성도 제외)"}>
+                      <b style={it.req ? undefined : { color: "var(--muted)" }}>{it.num}</b>
+                      {!it.req && <span style={{ display: "block", fontSize: 9, color: "var(--muted)", fontWeight: 400 }}>선택</span>}
                     </th>
                   ))}
                   <th>완성도</th>

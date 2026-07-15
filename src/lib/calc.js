@@ -41,24 +41,44 @@ export function scoreOf(session, r) {
   return num(r.testScore);
 }
 
-export function hwCount(session) {
-  const hw = session.hw;
-  if (!hw) return 0;
-  const s = num(hw.start),
-    e = num(hw.end);
-  if (s == null || e == null || e < s) return 0;
-  return e - s + 1;
+// 숙제 범위 목록. 신규는 session.hwRanges = [{start,end,req}], 구버전은 session.hw 를 필수 단일 범위로.
+export function hwRangesOf(session) {
+  if (Array.isArray(session.hwRanges)) return session.hwRanges;
+  const s = session.hw;
+  if (s && String(s.start ?? "").trim() !== "") return [{ start: String(s.start), end: String(s.end ?? ""), req: true }];
+  return [];
 }
 
+// 범위들을 펼친 개별 문항 목록: [{num, req}]  (req=false 는 '선택')
+export function hwItems(session) {
+  const items = [];
+  hwRangesOf(session).forEach((r) => {
+    const s = num(r.start),
+      e = num(r.end);
+    if (s == null || e == null || e < s) return;
+    for (let n = s; n <= e; n++) items.push({ num: n, req: r.req !== false });
+  });
+  return items;
+}
+
+export function hwCount(session) {
+  return hwItems(session).length;
+}
+
+// 완성도는 '필수' 문항만 대상으로 계산 (선택 문항은 제외)
 export function hwRate(session, r) {
-  const n = hwCount(session);
-  if (!n || !r.hq) return null;
+  const items = hwItems(session);
+  const reqIdx = [];
+  items.forEach((it, i) => {
+    if (it.req) reqIdx.push(i);
+  });
+  if (!reqIdx.length || !r.hq) return null;
   let done = 0;
-  for (let i = 0; i < n; i++) {
+  reqIdx.forEach((i) => {
     const mk = r.hq[i];
     if (mk === "1" || mk === "2") done++;
-  }
-  return (done / n) * 100;
+  });
+  return (done / reqIdx.length) * 100;
 }
 
 export function sessionStats(session, rec, students) {

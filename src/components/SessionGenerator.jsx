@@ -54,7 +54,7 @@ export default function SessionGenerator({ onClose }) {
           classId: ui.classId,
           chasi: String(maxChasi + i + 1),
           date: fmt(dt),
-          hw: { start: "1", end: "" },
+          hwRanges: [],
           testTotal: "100",
           test: { qCount: 20, points: [] },
         };

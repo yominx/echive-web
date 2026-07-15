@@ -67,13 +67,8 @@ export default function MsgTab() {
 
       <div className="panel pad" style={{ marginBottom: 16 }}>
         <div className="row" style={{ marginBottom: 12 }}>
-          <select style={{ minWidth: 190 }} value={session.id} onChange={(e) => setUi({ sess: e.target.value })}>
-            {sessions.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.chasi}차시 {s.date ? "· " + s.date : ""}
-              </option>
-            ))}
-          </select>
+          <b style={{ fontSize: 15 }}>{session.chasi}차시</b>
+          {session.date && <span style={{ color: "var(--muted)", fontSize: 13 }}>· {session.date}</span>}
           {dateMismatch(session.date) && (
             <span style={{ color: "var(--rose)", fontSize: 12, fontWeight: 600 }}>⚠ 이 차시 날짜({session.date})가 오늘과 다릅니다</span>
           )}
