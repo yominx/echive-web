@@ -4,10 +4,11 @@ import SessionGenerator from "./SessionGenerator.jsx";
 
 const ITEMS = [
   ["roster", "① 명단"],
-  ["grade", "② 출결·채점"],
-  ["card", "③ 안내카드"],
-  ["msg", "④ 안내·숙제"],
-  ["data", "⑤ 종합"],
+  ["attend", "② 출결"],
+  ["score", "③ 채점"],
+  ["card", "④ 안내카드"],
+  ["msg", "⑤ 안내·숙제"],
+  ["data", "⑥ 종합"],
 ];
 const OWNER_ONLY = new Set(["roster", "data"]);
 

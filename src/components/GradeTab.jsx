@@ -13,7 +13,7 @@ const Mini = ({ label, value }) => (
 
 const NEW_BLANK = { chasi: "", date: "", hs: "1", he: "", q: "20", tt: "100" };
 
-export default function GradeTab() {
+export default function GradeTab({ mode = "score" }) {
   const { db, ui, setUi, mutate, recOf, recFor, isOwner } = useStore();
   const bodyRef = useRef(null);
   const [nf, setNf] = useState(NEW_BLANK);
@@ -37,12 +37,18 @@ export default function GradeTab() {
     if (session && !session.test) mutate(() => (session.test = { qCount: 20, points: [] }));
   }, [session, mutate]);
 
-  const header = (
-    <div>
-      <h2>출결 · 채점</h2>
-      <p className="desc" style={{ maxWidth: "none" }}>차시를 고르거나 새로 만든 뒤, 출결·워크북을 입력하고 아래 테스트 채점표에서 O/X를 체크하면 총점·등수가 자동 계산됩니다.</p>
-    </div>
-  );
+  const header =
+    mode === "attend" ? (
+      <div>
+        <h2>출결</h2>
+        <p className="desc" style={{ maxWidth: "none" }}>차시를 고른 뒤 학생별 출결을 체크하고 비고(메모)를 남기세요.</p>
+      </div>
+    ) : (
+      <div>
+        <h2>숙제 · 테스트 채점</h2>
+        <p className="desc" style={{ maxWidth: "none" }}>숙제 범위(필수/선택)를 정하고 O/X를 체크하면 완성도·총점·등수가 자동 계산됩니다.</p>
+      </div>
+    );
 
   if (students.length === 0)
     return (
@@ -128,7 +134,7 @@ export default function GradeTab() {
         {!session ? (
           <div className="empty">차시를 선택하거나 새로 만들어 채점을 시작하세요.</div>
         ) : (
-          <GradeBody bodyRef={bodyRef} session={session} students={students} store={{ mutate, recOf, recFor }} />
+          <GradeBody bodyRef={bodyRef} session={session} students={students} store={{ mutate, recOf, recFor }} mode={mode} />
         )}
       </div>
     </div>
@@ -144,7 +150,7 @@ function NewField({ label, width, value, onChange, placeholder, tnum }) {
   );
 }
 
-function GradeBody({ bodyRef, session, students, store }) {
+function GradeBody({ bodyRef, session, students, store, mode }) {
   const { mutate, recOf, recFor } = store;
   const rec = recOf(session.id);
   const st = sessionStats(session, rec, students);
@@ -240,14 +246,18 @@ function GradeBody({ bodyRef, session, students, store }) {
 
   return (
     <>
-      <div className="grid5">
-        <Mini label="반평균 점수" value={one(st.avg)} />
-        <Mini label="상위30% 평균" value={one(st.top30)} />
-        <Mini label="반평균 완성도" value={pct(st.wbAvg)} />
-        <Mini label="응시 인원" value={st.graded + "/" + students.length} />
-        <Mini label="보충대상 (65%↓)" value={boost} />
-      </div>
+      {mode === "score" && (
+        <div className="grid5">
+          <Mini label="반평균 점수" value={one(st.avg)} />
+          <Mini label="상위30% 평균" value={one(st.top30)} />
+          <Mini label="반평균 완성도" value={pct(st.wbAvg)} />
+          <Mini label="응시 인원" value={st.graded + "/" + students.length} />
+          <Mini label="보충대상 (65%↓)" value={boost} />
+        </div>
+      )}
 
+      {mode === "attend" && (
+      <>
       {/* A. 출결 */}
       <div className="sec-t">
         <span className="n">A</span>출결
@@ -291,7 +301,11 @@ function GradeBody({ bodyRef, session, students, store }) {
           </tbody>
         </table>
       </div>
+      </>
+      )}
 
+      {mode === "score" && (
+      <>
       {/* B. 숙제 채점 */}
       <div className="sec-t" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -440,6 +454,8 @@ function GradeBody({ bodyRef, session, students, store }) {
       <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 10 }}>
         <b>1</b>=맞음 · <b>0·2</b>=틀림 · 공란=미응시. 1만 정답으로 배점이 합산됩니다. 숫자 입력 → 옆 칸 자동 이동 · 방향키로 이동 · Backspace로 지움.
       </p>
+      </>
+      )}
     </>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useStore } from "./store.jsx";
 import { initFirebase } from "./lib/firebase.js";
 import Header from "./components/Header.jsx";
-import ClassBar from "./components/ClassBar.jsx";
+import Sidebar from "./components/Sidebar.jsx";
 import Nav from "./components/Nav.jsx";
 import Footer from "./components/Footer.jsx";
 import AuthGate from "./components/AuthGate.jsx";
@@ -82,26 +82,32 @@ export default function App() {
 
   return (
     <>
-      <Header />
-      <ClassBar />
-      <Nav />
-      <main>
-        <div className="wrap">
-          {!ui.classId ? (
-            <div className="empty">위에서 반을 먼저 만들어 주세요. (예: 고A)</div>
-          ) : ui.tab === "roster" ? (
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
+        <Sidebar />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Header />
+          <Nav />
+          <main>
+            <div className="wrap">
+              {!ui.classId ? (
+                <div className="empty">왼쪽 사이드바에서 반을 먼저 만들어 주세요. (예: 고A)</div>
+              ) : ui.tab === "roster" ? (
             isOwner ? <RosterTab /> : <div className="empty">명단 관리는 주인(관리자)만 사용할 수 있습니다.</div>
-          ) : ui.tab === "grade" ? (
-            <GradeTab />
+          ) : ui.tab === "attend" ? (
+            <GradeTab mode="attend" />
+          ) : ui.tab === "score" ? (
+            <GradeTab mode="score" />
           ) : ui.tab === "card" ? (
             <CardsTab />
           ) : ui.tab === "data" ? (
             isOwner ? <DataTab /> : <div className="empty">종합 DATA는 주인(관리자)만 볼 수 있습니다.</div>
-          ) : (
-            <MsgTab />
-          )}
+              ) : (
+                <MsgTab />
+              )}
+            </div>
+          </main>
         </div>
-      </main>
+      </div>
       <Footer cloudOn={cloudOn} />
     </>
   );

@@ -17,7 +17,7 @@ function isTyping() {
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 const firstActiveClass = (db) => (db.classes.find((c) => !c.archived) ?? db.classes[0])?.id ?? null;
-const freshUi = (db) => ({ classId: firstActiveClass(db), tab: "grade", sess: null, msgSess: null, card: null, newSess: false });
+const freshUi = (db) => ({ classId: firstActiveClass(db), tab: "attend", sess: null, msgSess: null, card: null, newSess: false });
 
 export function StoreProvider({ children }) {
   const dbRef = useRef(loadDB());
