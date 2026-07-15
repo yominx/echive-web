@@ -29,6 +29,9 @@ export function StoreProvider({ children }) {
   const [ui, setUiState] = useState(() => freshUi(dbRef.current));
   const setUi = useCallback((patch) => setUiState((u) => ({ ...u, ...(typeof patch === "function" ? patch(u) : patch) })), []);
 
+  // 현재 로그인 사용자 + 주인 여부 (App 의 인증 흐름에서 설정)
+  const [me, setMe] = useState({ email: "", owner: false });
+
   // 활동 로그: 직전에 기록한 스냅샷 ↔ 현재를 비교해 디바운스로 요약 기록
   const loggedSnap = useRef(clone(dbRef.current));
   const logTimer = useRef(null);
@@ -138,6 +141,6 @@ export function StoreProvider({ children }) {
     return () => document.removeEventListener("visibilitychange", h);
   }, [flushLog]);
 
-  const value = { db, ui, setUi, commit, mutate, recOf, recFor, applyRemote, replaceDb };
+  const value = { db, ui, setUi, me, setMe, commit, mutate, recOf, recFor, applyRemote, replaceDb };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -8,11 +8,12 @@ const ITEMS = [
 ];
 
 export default function Nav() {
-  const { ui, setUi } = useStore();
+  const { ui, setUi, me } = useStore();
+  const items = ITEMS.filter(([k]) => k !== "roster" || me?.owner);
   return (
     <nav>
       <div className="wrap">
-        {ITEMS.map(([k, l]) => (
+        {items.map(([k, l]) => (
           <button key={k} className={"tab" + (ui.tab === k ? " on" : "")} onClick={() => setUi({ tab: k })}>
             {l}
           </button>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useStore } from "../store.jsx";
 import { ATT } from "../lib/constants.js";
 import { uid } from "../lib/db.js";
-import { num, one, pct, rankText, effPoints, testMax, scoreOf, hwCount, sessionStats } from "../lib/calc.js";
+import { num, one, pct, rankText, effPoints, testMax, scoreOf, hwCount, sessionStats, dateMismatch } from "../lib/calc.js";
 
 const Mini = ({ label, value }) => (
   <div className="mini">
@@ -14,7 +14,7 @@ const Mini = ({ label, value }) => (
 const NEW_BLANK = { chasi: "", date: "", hs: "1", he: "", q: "20", tt: "100" };
 
 export default function GradeTab() {
-  const { db, ui, setUi, mutate, recOf, recFor } = useStore();
+  const { db, ui, setUi, mutate, recOf, recFor, me } = useStore();
   const bodyRef = useRef(null);
   const [nf, setNf] = useState(NEW_BLANK);
 
@@ -80,8 +80,13 @@ export default function GradeTab() {
           ))}
         </select>
         <button className="btn" onClick={() => setUi({ newSess: !ui.newSess })}>+ 새 차시</button>
-        {session && (
+        {session && me?.owner && (
           <button className="del" style={{ padding: "8px 12px" }} onClick={delSession}>차시 삭제</button>
+        )}
+        {session && dateMismatch(session.date) && (
+          <span style={{ color: "var(--rose)", fontSize: 12, fontWeight: 600, marginLeft: 4 }}>
+            ⚠ 이 차시 날짜({session.date})가 오늘과 다릅니다
+          </span>
         )}
       </div>
 

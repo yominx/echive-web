@@ -40,18 +40,22 @@ export default function CardsTab() {
       wbAvg: st.wbAvg == null ? null : Math.round(st.wbAvg),
     };
   });
-  const recent = timeline.slice(-10);
-  const avgScore = mean(recent.filter((t) => t.score != null).map((t) => t.score));
-  const avgRank = mean(recent.filter((t) => t.rank != null).map((t) => t.rank));
-  const avgWb = mean(recent.filter((t) => t.wbRate != null).map((t) => t.wbRate));
-  const attend = recent.filter((t) => t.att === "현장").length;
+  // 상단 요약 타일: 전체 차시 반영 / 그래프·표: 최근 5차시만
+  const all = timeline;
+  const view = timeline.slice(-5);
+  const avgRank = mean(all.filter((t) => t.rank != null).map((t) => t.rank));
+  const avgWb = mean(all.filter((t) => t.wbRate != null).map((t) => t.wbRate));
+  const attend = all.filter((t) => t.att === "현장").length;
+  const attendTotal = all.filter((t) => t.att !== "").length;
+  const latest = all[all.length - 1];
+  const latestChasi = latest ? String(latest.chasi).replace("차시", "") : "–";
 
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
         <div>
           <h2>안내카드</h2>
-          <p className="desc">선택한 학생의 최근 10차시 데이터가 자동 정리됩니다. 그대로 학부모께 공유하세요.</p>
+          <p className="desc">상단 요약은 전체 차시, 그래프·표는 최근 5차시 기준으로 자동 정리됩니다. 그대로 학부모께 공유하세요.</p>
         </div>
         <div className="row noprint">
           <select style={{ minWidth: 130 }} value={cardId} onChange={(e) => setUi({ card: e.target.value })}>
@@ -74,18 +78,17 @@ export default function CardsTab() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
             <img src={LOGO_SRC} alt="이카이브" style={{ height: 34, width: "auto", display: "block" }} />
-            <div className="rt">최근 {recent.length}차시 기준</div>
           </div>
         </div>
 
         <div className="summ">
-          <Summ label="평균 테스트 점수" value={one(avgScore)} unit="점" />
+          <Summ label={latest ? latest.date || "날짜 없음" : "–"} value={latestChasi} unit="차시" />
           <Summ label="평균 등수" value={avgRank == null ? "–" : one(avgRank)} unit="등" />
           <Summ label="평균 숙제 완성도" value={avgWb == null ? "–" : Math.round(avgWb)} unit="%" />
-          <Summ label="출석" value={attend} unit={"/" + recent.length} />
+          <Summ label="출석" value={attend} unit={"/" + attendTotal} />
         </div>
 
-        {recent.length === 0 ? (
+        {all.length === 0 ? (
           <div style={{ padding: 40 }}>
             <div className="empty">아직 채점된 차시가 없습니다. ② 출결·채점에서 입력해 주세요.</div>
           </div>
@@ -94,7 +97,7 @@ export default function CardsTab() {
             <div className="charts">
               <div>
                 <div className="chart-t">테스트 점수 vs 반평균</div>
-                <LineChart data={recent} />
+                <LineChart data={view} />
                 <div className="legend">
                   <span><i style={{ background: "var(--indigo)" }} />학생</span>
                   <span><i style={{ background: "#cbd5e1" }} />반평균</span>
@@ -102,7 +105,7 @@ export default function CardsTab() {
               </div>
               <div>
                 <div className="chart-t">숙제 달성률 vs 반평균 (%)</div>
-                <BarChart data={recent} />
+                <BarChart data={view} />
                 <div className="legend">
                   <span><i style={{ background: "var(--indigo)" }} />학생</span>
                   <span><i style={{ background: "var(--amber)" }} />반평균</span>
@@ -119,7 +122,7 @@ export default function CardsTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recent.map((t, i) => {
+                  {view.map((t, i) => {
                     const disp = t.att === "Tx" ? "결석" : t.att;
                     return (
                       <tr key={i}>

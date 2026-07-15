@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useStore } from "../store.jsx";
-import { sessionStats, fillTemplate, copyText } from "../lib/calc.js";
+import { sessionStats, fillTemplate, copyText, dateMismatch } from "../lib/calc.js";
 
 const PLACEHOLDERS = ["{이름}", "{학교}", "{차시}", "{날짜}", "{점수}", "{반평균}", "{등수}", "{달성률}", "{숙제}"];
 
@@ -21,7 +21,8 @@ function CopyButton({ text, className, children }) {
 }
 
 export default function MsgTab() {
-  const { db, ui, setUi, mutate, recOf, recFor } = useStore();
+  const { db, ui, setUi, mutate, recOf, recFor, me } = useStore();
+  const owner = !!me?.owner;
   const students = db.students.filter((s) => s.classId === ui.classId);
   const sessions = db.sessions
     .filter((s) => s.classId === ui.classId)
@@ -73,29 +74,47 @@ export default function MsgTab() {
               </option>
             ))}
           </select>
+          {dateMismatch(session.date) && (
+            <span style={{ color: "var(--rose)", fontSize: 12, fontWeight: 600 }}>⚠ 이 차시 날짜({session.date})가 오늘과 다릅니다</span>
+          )}
         </div>
         <label className="field" style={{ marginBottom: 12 }}>
-          <span>이번 차시 공통 숙제 (모든 학생에게 {"{숙제}"}로 들어감)</span>
+          <span>
+            이번 차시 공통 숙제 (모든 학생에게 {"{숙제}"}로 들어감){!owner && <b style={{ color: "var(--muted)", fontWeight: 600 }}> · 주인만 수정</b>}
+            {!commonHw.trim() && <b style={{ color: "var(--rose)", fontWeight: 700 }}> · ⚠ 공통 숙제를 입력해 주세요</b>}
+          </span>
           <textarea
             className="msgbox"
-            style={{ minHeight: 56 }}
+            style={{
+              minHeight: 56,
+              ...(!commonHw.trim() ? { borderColor: "var(--rose)", boxShadow: "0 0 0 3px #ffe4e6" } : {}),
+            }}
             placeholder="예: 워크북 #41~#80, And One 5문항"
             value={commonHw}
-            onChange={(e) => mutate((d) => (session.homework = e.target.value))}
+            readOnly={!owner}
+            onChange={(e) => owner && mutate((d) => (session.homework = e.target.value))}
           />
         </label>
         <label className="field">
-          <span>안내문자 템플릿</span>
-          <textarea ref={tmplRef} className="msgbox" value={tmpl} onChange={(e) => mutate((d) => (d.settings.tmpl = e.target.value))} />
+          <span>안내문자 템플릿{!owner && <b style={{ color: "var(--muted)", fontWeight: 600 }}> · 주인만 수정</b>}</span>
+          <textarea
+            ref={tmplRef}
+            className="msgbox"
+            value={tmpl}
+            readOnly={!owner}
+            onChange={(e) => owner && mutate((d) => (d.settings.tmpl = e.target.value))}
+          />
         </label>
-        <div style={{ marginTop: 8 }}>
-          {PLACEHOLDERS.map((p) => (
-            <span key={p} className="ph" style={{ cursor: "pointer" }} onClick={() => insertPlaceholder(p)}>
-              {p}
-            </span>
-          ))}
-          <span style={{ fontSize: 11, color: "var(--muted)" }}>← 클릭해 넣을 수 있는 자동 항목</span>
-        </div>
+        {owner && (
+          <div style={{ marginTop: 8 }}>
+            {PLACEHOLDERS.map((p) => (
+              <span key={p} className="ph" style={{ cursor: "pointer" }} onClick={() => insertPlaceholder(p)}>
+                {p}
+              </span>
+            ))}
+            <span style={{ fontSize: 11, color: "var(--muted)" }}>← 클릭해 넣을 수 있는 자동 항목</span>
+          </div>
+        )}
       </div>
 
       <div className="row" style={{ marginBottom: 10 }}>

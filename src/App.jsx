@@ -25,12 +25,11 @@ function gate() {
 }
 
 export default function App() {
-  const { ui, applyRemote } = useStore();
+  const { ui, applyRemote, me, setMe } = useStore();
   const useAuth = !!(window.SHARE && window.SHARE.auth);
   const [phase, setPhase] = useState(useAuth ? "loading" : "boot");
   const [deniedEmail, setDeniedEmail] = useState("");
   const [errCode, setErrCode] = useState("");
-  const [me, setMe] = useState({ email: "", owner: false });
   const [cloudOn, setCloudOn] = useState(false);
   const booted = useRef(false);
 
@@ -56,6 +55,8 @@ export default function App() {
     });
 
     if (!useAuth) {
+      // 로컬 전용(비인증) 모드에서는 단일 사용자를 주인으로 취급
+      setMe({ email: "", owner: true });
       setPhase(gate() ? "ready" : "blocked");
     } else {
       // 로그인 모듈 로딩이 느릴 때 6초 후 로그인 화면 노출
@@ -88,7 +89,7 @@ export default function App() {
           {!ui.classId ? (
             <div className="empty">위에서 반을 먼저 만들어 주세요. (예: 고A)</div>
           ) : ui.tab === "roster" ? (
-            <RosterTab />
+            me.owner ? <RosterTab /> : <div className="empty">명단 관리는 주인(관리자)만 사용할 수 있습니다.</div>
           ) : ui.tab === "grade" ? (
             <GradeTab />
           ) : ui.tab === "card" ? (
@@ -98,7 +99,7 @@ export default function App() {
           )}
         </div>
       </main>
-      <Footer cloudOn={cloudOn} me={me} />
+      <Footer cloudOn={cloudOn} />
     </>
   );
 }

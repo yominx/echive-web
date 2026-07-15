@@ -164,6 +164,19 @@ export function parseRows(rows, classId, uid) {
   return add;
 }
 
+// "7/21(월)", "7/1", "07-21" 등에서 월/일 추출
+export function parseMD(str) {
+  const m = String(str || "").match(/(\d{1,2})\s*[/.\-]\s*(\d{1,2})/);
+  return m ? { m: +m[1], d: +m[2] } : null;
+}
+// 차시 날짜가 오늘과 다른가? (날짜가 없거나 해석 불가면 false)
+export function dateMismatch(dateStr) {
+  const md = parseMD(dateStr);
+  if (!md) return false;
+  const now = new Date();
+  return md.m !== now.getMonth() + 1 || md.d !== now.getDate();
+}
+
 export function copyText(t) {
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {

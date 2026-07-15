@@ -5,8 +5,8 @@ import { logout } from "../lib/firebase.js";
 import AdminPanel from "./AdminPanel.jsx";
 import LogPanel from "./LogPanel.jsx";
 
-export default function Footer({ cloudOn, me }) {
-  const { db, replaceDb } = useStore();
+export default function Footer({ cloudOn }) {
+  const { db, replaceDb, me } = useStore();
   const fileRef = useRef(null);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showLog, setShowLog] = useState(false);
@@ -76,21 +76,25 @@ export default function Footer({ cloudOn, me }) {
               로그아웃
             </button>
           )}
-          {db.classes.length === 0 && (
+          {me?.owner && db.classes.length === 0 && (
             <button className="btn dark" onClick={onSeed}>
               예시 데이터 채우기
             </button>
           )}
-          <button className="del" style={{ padding: "7px 12px" }} onClick={onReset}>
-            전체 초기화
-          </button>
           <button className="btn line" style={{ padding: "7px 12px" }} onClick={onBackup}>
             백업 저장
           </button>
-          <button className="btn line" style={{ padding: "7px 12px" }} onClick={() => fileRef.current?.click()}>
-            백업 복원
-          </button>
-          <input ref={fileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={onRestoreFile} />
+          {me?.owner && (
+            <>
+              <button className="btn line" style={{ padding: "7px 12px" }} onClick={() => fileRef.current?.click()}>
+                백업 복원
+              </button>
+              <button className="del" style={{ padding: "7px 12px" }} onClick={onReset}>
+                전체 초기화
+              </button>
+              <input ref={fileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={onRestoreFile} />
+            </>
+          )}
         </span>
       </div>
     </footer>
