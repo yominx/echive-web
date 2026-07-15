@@ -86,13 +86,15 @@ export default function CardsTab() {
   const curId = ui.sess && sessions.some((s) => s.id === ui.sess) ? ui.sess : defId;
   const curIdx = sessions.findIndex((s) => s.id === curId);
 
-  // 상단 "이번 차시" = 선택 차시 / 그래프·표: 선택 차시까지 최근 5차시 / 전체 평균: 전체 차시
+  // 상단 "이번 차시" = 선택 차시 / 그래프·표: 선택 차시까지 최근 5차시
+  // 평균(등수·숙제·출석): 1차시 ~ 선택 차시까지 누적
   const all = timeline;
   const view = curIdx >= 0 ? timeline.slice(Math.max(0, curIdx - 4), curIdx + 1) : [];
-  const avgRank = mean(all.filter((t) => t.rank != null).map((t) => t.rank));
-  const avgWb = mean(all.filter((t) => t.wbRate != null).map((t) => t.wbRate));
-  const attend = all.filter((t) => t.att === "현장").length;
-  const attendTotal = all.filter((t) => t.att !== "").length;
+  const upto = curIdx >= 0 ? timeline.slice(0, curIdx + 1) : [];
+  const avgRank = mean(upto.filter((t) => t.rank != null).map((t) => t.rank));
+  const avgWb = mean(upto.filter((t) => t.wbRate != null).map((t) => t.wbRate));
+  const attend = upto.filter((t) => t.att === "현장").length;
+  const attendTotal = upto.filter((t) => t.att !== "").length;
   const latest = curIdx >= 0 ? timeline[curIdx] : null;
   const latestChasi = latest ? String(latest.chasi).replace("차시", "") : "–";
   const latestAtt = latest ? latest.att : "";
@@ -184,7 +186,7 @@ export default function CardsTab() {
             </div>
 
             <div style={{ padding: "6px 22px 0" }}>
-              <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>전체 차시 평균</div>
+              <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>{latest ? `1~${latestChasi}차시 평균` : "차시 평균"}</div>
               <div className="summ" style={{ gridTemplateColumns: "repeat(3,1fr)", border: "1px solid var(--line2)", borderRadius: 12 }}>
                 <Summ label="평균 등수" value={avgRank == null ? "–" : one(avgRank)} unit="등" />
                 <Summ label="평균 숙제 완성도" value={avgWb == null ? "–" : Math.round(avgWb)} unit="%" />

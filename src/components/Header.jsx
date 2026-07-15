@@ -12,8 +12,8 @@ export default function Header() {
     <header>
       <div className="wrap head">
         <div>
-          <div className="eyebrow">학원 통합 관리</div>
-          <h1>출결 · 채점 · 안내</h1>
+          <div className="eyebrow">이카이브</div>
+          <h1>학원 통합 관리 시스템</h1>
         </div>
         <div className="stats">
           <Stat label="반" value={db.classes.length} />
