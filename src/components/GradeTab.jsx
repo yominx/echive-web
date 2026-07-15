@@ -127,7 +127,30 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
   };
 
   const hwKey = gridKey("hwin", "hq", hn, (k) => (k === "1" || k === "2" ? k : null));
-  const oxKey = gridKey("oxin", "q", qn, (k) => (k === "0" || k === "1" || k === "2" ? k : null));
+
+  // 테스트 채점 셀: 자유 입력(숫자·온점) — 세로 이동 + 양끝 방향키 이동
+  const sanitize = (v) => String(v).replace(/[^0-9.]/g, "");
+  const setCell = (i, ri, val) =>
+    mutate(() => {
+      const rr = recFor(session.id, students[ri].id);
+      rr.q ||= {};
+      rr.q[i] = val;
+    });
+  const testKey = (e) => {
+    const inp = e.currentTarget;
+    const ri = +inp.dataset.r,
+      ci = +inp.dataset.c,
+      k = e.key;
+    const focusCell = (rr, cc) => {
+      if (rr < 0 || rr >= students.length || cc < 0 || cc >= qn) return;
+      const el = bodyRef.current?.querySelector(`input.oxin[data-r="${rr}"][data-c="${cc}"]`);
+      if (el) { el.focus(); el.select && el.select(); }
+    };
+    if (k === "Enter" || k === "ArrowDown") { e.preventDefault(); focusCell(ri + 1, ci); }
+    else if (k === "ArrowUp") { e.preventDefault(); focusCell(ri - 1, ci); }
+    else if (k === "ArrowRight" && inp.selectionStart === inp.value.length) { e.preventDefault(); focusCell(ri, ci + 1); }
+    else if (k === "ArrowLeft" && inp.selectionStart === 0) { e.preventDefault(); focusCell(ri, ci - 1); }
+  };
 
   const ensureRanges = (sess) => {
     if (!Array.isArray(sess.hwRanges)) sess.hwRanges = hwRangesOf(sess).map((r) => ({ ...r }));
@@ -144,6 +167,8 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
       session.test ||= { qCount: 0, points: [] };
       session.test.qCount = n;
       if (session.test.points) session.test.points.length = n;
+      if (session.test.answers) session.test.answers.length = n;
+      if (session.test.subj) session.test.subj.length = n;
     });
   };
 
@@ -152,6 +177,27 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
       session.test.points ||= [];
       session.test.points[i] = val;
     });
+
+  const setAnswer = (i, val) =>
+    mutate(() => {
+      session.test.answers ||= [];
+      session.test.answers[i] = val;
+    });
+
+  const toggleSubj = (i) =>
+    mutate(() => {
+      session.test.subj ||= [];
+      session.test.subj[i] = !session.test.subj[i];
+    });
+
+  // 셀 색상: 객관식=정답 대조 / 주관식=1 정답, 0·2 오답
+  const cellClass = (i, val) => {
+    if (val == null || val === "") return "";
+    if (session.test?.subj?.[i]) return val === "1" ? "ok" : val === "0" || val === "2" ? "no" : "";
+    const ans = session.test?.answers?.[i];
+    if (ans == null || String(ans).trim() === "") return "";
+    return String(val).trim() === String(ans).trim() ? "ok" : "no";
+  };
 
   return (
     <>
@@ -167,10 +213,8 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
 
       {mode === "attend" && (
       <>
-      {/* A. 출결 */}
-      <div className="sec-t">
-        <span className="n">A</span>출결
-      </div>
+      {/* 출결 */}
+      <div className="sec-t">출결</div>
       <div className="panel scroll">
         <table style={{ minWidth: 520 }}>
           <thead>
@@ -215,11 +259,9 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
 
       {mode === "score" && (
       <>
-      {/* B. 숙제 채점 */}
+      {/* 숙제 채점 */}
       <div className="sec-t" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="n">B</span>숙제 채점
-        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>숙제 채점</span>
         <span style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", fontWeight: 500, fontSize: 13, color: "var(--ink2)" }}>
           {hwRanges.map((rg, i) => (
             <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 3, border: "1px solid var(--line)", borderRadius: 8, padding: "3px 6px" }}>
@@ -293,11 +335,9 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
         </>
       )}
 
-      {/* C. 테스트 채점 */}
+      {/* 테스트 채점 */}
       <div className="sec-t" style={{ justifyContent: "space-between" }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="n">C</span>테스트 채점
-        </span>
+        <span>테스트 채점</span>
         <span style={{ fontWeight: 500, fontSize: 13, color: "var(--ink2)" }}>
           문항 수
           <input className="tnum" style={{ width: 56, padding: "5px 8px", margin: "0 6px" }} defaultValue={qn} key={"qc" + session.id} onBlur={(e) => setQCount(e.target.value)} />{" "}
@@ -306,29 +346,47 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
         </span>
       </div>
       <div className="panel scroll">
-        <table style={{ minWidth: 260 + qn * 36 }}>
+        <table style={{ minWidth: 260 + qn * 48 }}>
           <thead>
             <tr>
-              <th rowSpan={2}>#</th>
-              <th rowSpan={2}>이름</th>
-              {Array.from({ length: qn }, (_, i) => (
-                <th key={i} className="qhead">
-                  <b>{i + 1}</b>
-                  <input
-                    className="pt-in tnum"
-                    defaultValue={session.test.points && session.test.points[i] != null && session.test.points[i] !== "" ? session.test.points[i] : Math.round(pts[i] * 10) / 10}
-                    key={"pt" + session.id + "_" + qn + "_" + i}
-                    onChange={(e) => setPoint(i, e.target.value)}
-                  />
-                </th>
-              ))}
-              <th rowSpan={2}>총점</th>
-              <th rowSpan={2}>등수</th>
-            </tr>
-            <tr>
-              <th colSpan={qn} style={{ textAlign: "center", color: "#cbd5e1", fontWeight: 400, padding: 2 }}>
-                ↑ 문항번호 / 배점 · 칸에 0·1·2 타이핑 (1=정답), 방향키로 이동
-              </th>
+              <th>#</th>
+              <th>이름</th>
+              {Array.from({ length: qn }, (_, i) => {
+                const subj = !!session.test?.subj?.[i];
+                return (
+                  <th key={i} className="qhead">
+                    <b>{i + 1}</b>
+                    <button className={"qtype " + (subj ? "subj" : "obj")} onClick={() => toggleSubj(i)} title="객관식 ↔ 주관식 전환">
+                      {subj ? "주관식" : "객관식"}
+                    </button>
+                    <input
+                      className="pt-in tnum"
+                      title="배점"
+                      defaultValue={session.test.points && session.test.points[i] != null && session.test.points[i] !== "" ? session.test.points[i] : Math.round(pts[i] * 10) / 10}
+                      key={"pt" + session.id + "_" + qn + "_" + i}
+                      onChange={(e) => { e.target.value = sanitize(e.target.value); setPoint(i, e.target.value); }}
+                    />
+                    <span className="pt-cap">배점</span>
+                    {subj ? (
+                      <span className="ansna">1=정답<br />0·2=오답</span>
+                    ) : (
+                      <>
+                        <input
+                          className="ans-in tnum"
+                          title="정답"
+                          placeholder="정답"
+                          defaultValue={session.test?.answers?.[i] ?? ""}
+                          key={"an" + session.id + "_" + i}
+                          onChange={(e) => { e.target.value = sanitize(e.target.value); setAnswer(i, e.target.value); }}
+                        />
+                        <span className="ans-cap">정답</span>
+                      </>
+                    )}
+                  </th>
+                );
+              })}
+              <th>총점</th>
+              <th>등수</th>
             </tr>
           </thead>
           <tbody>
@@ -343,12 +401,14 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
                   {Array.from({ length: qn }, (_, j) => (
                     <td key={j} style={{ padding: 3, textAlign: "center" }}>
                       <input
-                        className={"oxin " + (q[j] === "1" ? "ok" : q[j] === "0" || q[j] === "2" ? "no" : "")}
+                        className={"oxin " + cellClass(j, q[j])}
                         data-r={i}
                         data-c={j}
-                        value={q[j] || ""}
-                        readOnly
-                        onKeyDown={oxKey}
+                        defaultValue={q[j] || ""}
+                        key={"c" + session.id + "_" + s.id + "_" + j}
+                        title={session.test?.subj?.[j] ? "주관식: 1=정답 / 0·2=오답" : "객관식: 학생 답 입력"}
+                        onKeyDown={testKey}
+                        onChange={(e) => { e.target.value = sanitize(e.target.value); setCell(j, i, e.target.value); }}
                       />
                     </td>
                   ))}
@@ -361,7 +421,7 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
         </table>
       </div>
       <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 10 }}>
-        <b>1</b>=맞음 · <b>0·2</b>=틀림 · 공란=미응시. 1만 정답으로 배점이 합산됩니다. 숫자 입력 → 옆 칸 자동 이동 · 방향키로 이동 · Backspace로 지움.
+        <b>객관식</b>은 문항별 <b>정답</b>을 넣고 학생 답을 입력하면 자동 대조됩니다. <b>주관식</b>은 정답칸 없이 <b>1</b>=정답, <b>0·2</b>=오답으로 직접 채점하세요. 숫자·온점(.)만 입력 · Enter/방향키로 이동.
       </p>
       </>
       )}

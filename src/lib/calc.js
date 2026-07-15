@@ -21,19 +21,24 @@ export function effPoints(session) {
 
 export const testMax = (session) => Math.round(effPoints(session).reduce((a, b) => a + b, 0) * 10) / 10;
 
+// 객관식: 학생 답이 정답과 일치하면 정답. 주관식: 1=정답, 0·2=오답(수동).
 export function scoreOf(session, r) {
   const t = session.test;
   if (t && (num(t.qCount) || 0) > 0 && r.q) {
     const pts = effPoints(session);
+    const answers = t.answers || [];
+    const subj = t.subj || [];
     let has = false,
       sum = 0;
     for (let i = 0; i < pts.length; i++) {
       const mk = r.q[i];
-      if (mk === "1") {
-        sum += pts[i];
-        has = true;
-      } else if (mk === "0" || mk === "2") {
-        has = true;
+      if (mk == null || String(mk).trim() === "") continue; // 미응시
+      has = true;
+      if (subj[i]) {
+        if (mk === "1") sum += pts[i]; // 주관식 정답
+      } else {
+        const ans = answers[i];
+        if (ans != null && String(ans).trim() !== "" && String(mk).trim() === String(ans).trim()) sum += pts[i];
       }
     }
     if (has) return Math.round(sum * 10) / 10;
