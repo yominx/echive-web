@@ -89,6 +89,7 @@ export default function CardsTab() {
   const attendTotal = all.filter((t) => t.att !== "").length;
   const latest = all[all.length - 1];
   const latestChasi = latest ? String(latest.chasi).replace("차시", "") : "–";
+  const latestAtt = latest ? latest.att : "";
 
   return (
     <>
@@ -127,9 +128,22 @@ export default function CardsTab() {
             <b className="tnum" style={{ whiteSpace: "nowrap" }}>{latest ? latest.date || "날짜 없음" : "–"}</b>
             <span>{latest ? `${latestChasi}차시` : "최근 차시"}</span>
           </div>
-          <Summ label="평균 등수" value={avgRank == null ? "–" : one(avgRank)} unit="등" />
-          <Summ label="평균 숙제 완성도" value={avgWb == null ? "–" : Math.round(avgWb)} unit="%" />
-          <Summ label="출석" value={attend} unit={"/" + attendTotal} />
+          <Summ
+            label="이번 차시 등수"
+            value={latest && latest.rank != null ? latest.rank : "–"}
+            unit={latest && latest.rank != null ? " / " + latest.graded : ""}
+          />
+          <Summ
+            label="이번 차시 숙제"
+            value={latest && latest.wbRate != null ? Math.round(latest.wbRate) : "–"}
+            unit={latest && latest.wbRate != null ? "%" : ""}
+          />
+          <div>
+            <b className="tnum" style={{ color: latestAtt === "현장" ? "var(--emerald)" : latestAtt ? "var(--rose)" : undefined }}>
+              {latestAtt ? (latestAtt === "Tx" ? "결석" : latestAtt) : "–"}
+            </b>
+            <span>이번 차시 출석</span>
+          </div>
         </div>
 
         {all.length === 0 ? (
@@ -159,7 +173,17 @@ export default function CardsTab() {
                 </div>
               </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", padding: "0 22px 4px" }}>
+
+            <div style={{ padding: "6px 22px 0" }}>
+              <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>전체 차시 평균</div>
+              <div className="summ" style={{ gridTemplateColumns: "repeat(3,1fr)", border: "1px solid var(--line2)", borderRadius: 12 }}>
+                <Summ label="평균 등수" value={avgRank == null ? "–" : one(avgRank)} unit="등" />
+                <Summ label="평균 숙제 완성도" value={avgWb == null ? "–" : Math.round(avgWb)} unit="%" />
+                <Summ label="출석" value={attend} unit={"/" + attendTotal} />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "16px 22px 4px" }}>
               <span style={{ fontSize: 11, color: "var(--muted)" }}>최근 5차시</span>
             </div>
             <div className="scroll" style={{ padding: "0 22px 22px" }}>
