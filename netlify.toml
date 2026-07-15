@@ -1,0 +1,10 @@
+# Netlify 배포 설정 — 빌드 과정이 없는 정적 단일 파일 앱
+[build]
+  publish = "."
+  command = ""
+
+# 어떤 경로로 들어와도 앱(index.html)을 보여줍니다.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

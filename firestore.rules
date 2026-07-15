@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 학원 공유 데이터: 로그인한 사용자만 읽기/쓰기 허용.
+    // 앱은 academy/data 문서 하나에 전체 상태(JSON)를 저장합니다.
+    match /academy/{docId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
