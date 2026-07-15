@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useStore } from "../store.jsx";
 import { sessionStats, fillTemplate, copyText, dateMismatch } from "../lib/calc.js";
 
-const PLACEHOLDERS = ["{이름}", "{학교}", "{차시}", "{날짜}", "{점수}", "{반평균}", "{등수}", "{달성률}", "{숙제}"];
+const PLACEHOLDERS = ["{이름}", "{학교}", "{차시}", "{날짜}", "{진도}", "{점수}", "{반평균}", "{등수}", "{달성률}", "{숙제}"];
 
 function CopyButton({ text, className, children }) {
   const [label, setLabel] = useState(children);
@@ -23,7 +23,7 @@ function CopyButton({ text, className, children }) {
 export default function MsgTab() {
   const { db, ui, setUi, mutate, recOf, recFor, isOwner } = useStore();
   const owner = isOwner;
-  const students = db.students.filter((s) => s.classId === ui.classId);
+  const students = db.students.filter((s) => s.classId === ui.classId).sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko"));
   const sessions = db.sessions
     .filter((s) => s.classId === ui.classId)
     .sort((a, b) => (parseFloat(a.chasi) || 0) - (parseFloat(b.chasi) || 0));
@@ -45,11 +45,12 @@ export default function MsgTab() {
   const st = sessionStats(session, recOf(session.id), students);
   const tmpl = db.settings.tmpl;
   const commonHw = session.homework || "";
+  const progress = session.progress || "";
 
   const msgFor = (s) => {
     const r = recOf(session.id)[s.id] || {};
     const row = st.rows.find((x) => x.id === s.id) || {};
-    return fillTemplate(tmpl, { student: s, session, row, rank: st.rankMap[s.id], graded: st.graded, avg: st.avg, hw: r.hw || commonHw || "" });
+    return fillTemplate(tmpl, { student: s, session, row, rank: st.rankMap[s.id], graded: st.graded, avg: st.avg, hw: r.hw || commonHw || "", jindo: progress });
   };
 
   const insertPlaceholder = (ph) => {
@@ -73,23 +74,36 @@ export default function MsgTab() {
             <span style={{ color: "var(--rose)", fontSize: 12, fontWeight: 600 }}>⚠ 이 차시 날짜({session.date})가 오늘과 다릅니다</span>
           )}
         </div>
-        <label className="field" style={{ marginBottom: 12 }}>
-          <span>
-            이번 차시 공통 숙제 (모든 학생에게 {"{숙제}"}로 들어감){!owner && <b style={{ color: "var(--muted)", fontWeight: 600 }}> · 주인만 수정</b>}
-            {!commonHw.trim() && <b style={{ color: "var(--rose)", fontWeight: 700 }}> · ⚠ 공통 숙제를 입력해 주세요</b>}
-          </span>
-          <textarea
-            className="msgbox"
-            style={{
-              minHeight: 56,
-              ...(!commonHw.trim() ? { borderColor: "var(--rose)", boxShadow: "0 0 0 3px #ffe4e6" } : {}),
-            }}
-            placeholder="예: 워크북 #41~#80, And One 5문항"
-            value={commonHw}
-            readOnly={!owner}
-            onChange={(e) => owner && mutate((d) => (session.homework = e.target.value))}
-          />
-        </label>
+        <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+          <label className="field" style={{ flex: 1, minWidth: 200 }}>
+            <span>이번 차시 진도 ({"{진도}"}){!owner && <b style={{ color: "var(--muted)", fontWeight: 600 }}> · 주인만 수정</b>}</span>
+            <textarea
+              className="msgbox"
+              style={{ minHeight: 56 }}
+              placeholder="예: 미적분 II · 3단원 극한과 연속"
+              value={progress}
+              readOnly={!owner}
+              onChange={(e) => owner && mutate(() => (session.progress = e.target.value))}
+            />
+          </label>
+          <label className="field" style={{ flex: 1, minWidth: 200 }}>
+            <span>
+              이번 차시 공통 숙제 ({"{숙제}"}){!owner && <b style={{ color: "var(--muted)", fontWeight: 600 }}> · 주인만 수정</b>}
+              {!commonHw.trim() && <b style={{ color: "var(--rose)", fontWeight: 700 }}> · ⚠ 입력해 주세요</b>}
+            </span>
+            <textarea
+              className="msgbox"
+              style={{
+                minHeight: 56,
+                ...(!commonHw.trim() ? { borderColor: "var(--rose)", boxShadow: "0 0 0 3px #ffe4e6" } : {}),
+              }}
+              placeholder="예: 워크북 #41~#80, And One 5문항"
+              value={commonHw}
+              readOnly={!owner}
+              onChange={(e) => owner && mutate((d) => (session.homework = e.target.value))}
+            />
+          </label>
+        </div>
         <label className="field">
           <span>안내문자 템플릿{!owner && <b style={{ color: "var(--muted)", fontWeight: 600 }}> · 주인만 수정</b>}</span>
           <textarea

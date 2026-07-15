@@ -13,7 +13,7 @@ const nameCellStyle = { position: "sticky", left: 0, background: "#fff", zIndex:
 export default function DataTab() {
   const { db, ui, recOf } = useStore();
   const [metric, setMetric] = useState("score");
-  const students = db.students.filter((s) => s.classId === ui.classId);
+  const students = db.students.filter((s) => s.classId === ui.classId).sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko"));
   const sessions = db.sessions
     .filter((s) => s.classId === ui.classId)
     .sort((a, b) => (parseFloat(a.chasi) || 0) - (parseFloat(b.chasi) || 0));

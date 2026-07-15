@@ -18,7 +18,7 @@ export default function GradeTab({ mode = "score" }) {
   const bodyRef = useRef(null);
   const [nf, setNf] = useState(NEW_BLANK);
 
-  const students = db.students.filter((s) => s.classId === ui.classId);
+  const students = db.students.filter((s) => s.classId === ui.classId).sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko"));
   const sessions = db.sessions
     .filter((s) => s.classId === ui.classId)
     .sort((a, b) => (parseFloat(a.chasi) || 0) - (parseFloat(b.chasi) || 0));

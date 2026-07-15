@@ -111,12 +111,13 @@ export function sessionStats(session, rec, students) {
   return { rows, avg, top30, rankMap, wbAvg, graded: scored.length };
 }
 
-export function fillTemplate(tmpl, { student, session, row, rank, graded, avg, hw }) {
+export function fillTemplate(tmpl, { student, session, row, rank, graded, avg, hw, jindo }) {
   const map = {
     "{이름}": student.name || "",
     "{학교}": student.school || "",
     "{차시}": session.chasi || "",
     "{날짜}": session.date || "",
+    "{진도}": jindo || "–",
     "{점수}": row.score == null ? "미응시" : row.score,
     "{반평균}": avg == null ? "–" : Math.round(avg * 10) / 10,
     "{등수}": rankText(rank, graded),
@@ -124,7 +125,7 @@ export function fillTemplate(tmpl, { student, session, row, rank, graded, avg, h
     "{숙제}": hw || "–",
   };
   return tmpl
-    .replace(/\{이름\}|\{학교\}|\{차시\}|\{날짜\}|\{점수\}|\{반평균\}|\{등수\}|\{달성률\}|\{숙제\}/g, (k) => map[k])
+    .replace(/\{이름\}|\{학교\}|\{차시\}|\{날짜\}|\{진도\}|\{점수\}|\{반평균\}|\{등수\}|\{달성률\}|\{숙제\}/g, (k) => map[k])
     .replace(/\[\s+/g, "[");
 }
 

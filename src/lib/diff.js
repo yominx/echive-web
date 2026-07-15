@@ -67,6 +67,7 @@ export function summarizeChanges(prev, next) {
     const a = psx[id],
       b = nsx[id];
     if ((a.homework || "") !== (b.homework || "")) out.push(`${sessLabel(id)} 숙제 안내 수정`);
+    if ((a.progress || "") !== (b.progress || "")) out.push(`${sessLabel(id)} 진도 수정`);
     const cfg = (s) => JSON.stringify({ chasi: s.chasi, date: s.date, testTotal: s.testTotal, test: s.test, hw: s.hw, hwRanges: s.hwRanges });
     if (cfg(a) !== cfg(b)) out.push(`${sessLabel(id)} 차시 설정 변경`);
   }
