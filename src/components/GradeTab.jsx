@@ -3,6 +3,7 @@ import { useStore } from "../store.jsx";
 import { ATT } from "../lib/constants.js";
 import { uid } from "../lib/db.js";
 import { num, one, pct, rankText, effPoints, testMax, scoreOf, hwCount, sessionStats, dateMismatch } from "../lib/calc.js";
+import SessionGenerator from "./SessionGenerator.jsx";
 
 const Mini = ({ label, value }) => (
   <div className="mini">
@@ -17,6 +18,7 @@ export default function GradeTab() {
   const { db, ui, setUi, mutate, recOf, recFor, isOwner } = useStore();
   const bodyRef = useRef(null);
   const [nf, setNf] = useState(NEW_BLANK);
+  const [showGen, setShowGen] = useState(false);
 
   const students = db.students.filter((s) => s.classId === ui.classId);
   const sessions = db.sessions
@@ -37,7 +39,26 @@ export default function GradeTab() {
     if (session && !session.test) mutate(() => (session.test = { qCount: 20, points: [] }));
   }, [session, mutate]);
 
-  if (students.length === 0) return <div className="empty">먼저 ① 명단에서 이 반의 학생을 등록하세요.</div>;
+  const header = (
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
+        <div>
+          <h2>출결 · 채점</h2>
+          <p className="desc" style={{ maxWidth: "none" }}>차시를 고르거나 새로 만든 뒤, 출결·워크북을 입력하고 아래 테스트 채점표에서 O/X를 체크하면 총점·등수가 자동 계산됩니다.</p>
+        </div>
+        <button className="btn line" onClick={() => setShowGen(true)}>📅 차시 생성기</button>
+      </div>
+      {showGen && <SessionGenerator onClose={() => setShowGen(false)} />}
+    </>
+  );
+
+  if (students.length === 0)
+    return (
+      <div ref={bodyRef}>
+        {header}
+        <div className="empty" style={{ marginTop: 16 }}>먼저 ① 명단에서 이 반의 학생을 등록하세요. (차시 생성기로 일정을 먼저 만들 수도 있어요)</div>
+      </div>
+    );
 
   const makeSession = () => {
     const chasi = nf.chasi.trim();
@@ -67,8 +88,7 @@ export default function GradeTab() {
 
   return (
     <div ref={bodyRef}>
-      <h2>출결 · 채점</h2>
-      <p className="desc" style={{ maxWidth: "none" }}>차시를 고르거나 새로 만든 뒤, 출결·워크북을 입력하고 아래 테스트 채점표에서 O/X를 체크하면 총점·등수가 자동 계산됩니다.</p>
+      {header}
 
       <div className="row" style={{ marginBottom: 8 }}>
         <select style={{ minWidth: 190 }} value={session ? session.id : ""} onChange={(e) => setUi({ sess: e.target.value || null })}>
