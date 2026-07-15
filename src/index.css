@@ -45,7 +45,7 @@
   .del{color:var(--muted); font-size:12px} .del:hover{color:var(--rose)}
   table{width:100%; border-collapse:collapse; font-size:14px}
   th{text-align:left; color:var(--muted); font-size:12px; font-weight:600; padding:10px 12px; border-bottom:1px solid var(--line2); white-space:nowrap}
-  td{padding:8px 12px; border-bottom:1px solid #f6f8fa} tr:hover td{background:#fafbfc}
+  td{padding:8px 12px; border-bottom:1px solid #f6f8fa; white-space:nowrap} tr:hover td{background:#fafbfc}
   .scroll{overflow-x:auto}
   .empty{background:#fff; border:1px dashed var(--line); border-radius:13px; padding:44px; text-align:center; color:var(--muted)}
   .grid5{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:16px}
