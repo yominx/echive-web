@@ -11,6 +11,8 @@ export default function RosterTab() {
   const [form, setForm] = useState(BLANK);
   const [showBulk, setShowBulk] = useState(false);
   const [bulkText, setBulkText] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [draft, setDraft] = useState(BLANK);
   const xlsxRef = useRef(null);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -90,17 +92,23 @@ export default function RosterTab() {
     }
   };
 
-  const editStudent = (s) => {
-    const name = prompt("이름", s.name);
-    if (name === null) return;
-    mutate(() => {
-      s.name = name.trim() || s.name;
-      s.school = prompt("학교", s.school) ?? s.school;
-      s.grade = prompt("학년", s.grade) ?? s.grade;
-      s.studentPhone = prompt("학생 연락처", s.studentPhone) ?? s.studentPhone;
-      s.parentPhone = prompt("학부모 연락처", s.parentPhone) ?? s.parentPhone;
-    });
+  const startEdit = (s) => {
+    setEditId(s.id);
+    setDraft({ name: s.name || "", school: s.school || "", grade: s.grade || "", studentPhone: s.studentPhone || "", parentPhone: s.parentPhone || "" });
   };
+  const cancelEdit = () => setEditId(null);
+  const saveEdit = (s) => {
+    if (!draft.name.trim()) return; // 이름은 필수
+    mutate(() => {
+      s.name = draft.name.trim();
+      s.school = draft.school.trim();
+      s.grade = draft.grade.trim();
+      s.studentPhone = draft.studentPhone.trim();
+      s.parentPhone = draft.parentPhone.trim();
+    });
+    setEditId(null);
+  };
+  const setD = (k) => (e) => setDraft((d) => ({ ...d, [k]: e.target.value }));
 
   const delStudent = (s) => {
     if (confirm("이 학생을 삭제할까요?")) mutate((d) => (d.students = d.students.filter((x) => x.id !== s.id)));
@@ -158,20 +166,52 @@ export default function RosterTab() {
                 </tr>
               </thead>
               <tbody>
-                {list.map((s, i) => (
-                  <tr key={s.id}>
-                    <td className="tnum" style={{ color: "var(--muted)" }}>{i + 1}</td>
-                    <td style={{ fontWeight: 600 }}>{s.name}</td>
-                    <td>{s.school || "–"}</td>
-                    <td>{s.grade || "–"}</td>
-                    <td className="tnum">{s.studentPhone || "–"}</td>
-                    <td className="tnum">{s.parentPhone || "–"}</td>
-                    <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                      <button className="link" onClick={() => editStudent(s)}>수정</button>
-                      <button className="del" style={{ marginLeft: 12 }} onClick={() => delStudent(s)}>삭제</button>
-                    </td>
-                  </tr>
-                ))}
+                {list.map((s, i) => {
+                  const editing = editId === s.id;
+                  if (editing) {
+                    const cell = (k, w, ph, tnum) => (
+                      <td style={{ padding: "4px 8px" }}>
+                        <input
+                          className={tnum ? "tnum" : ""}
+                          style={{ width: w, padding: "5px 8px" }}
+                          value={draft[k]}
+                          placeholder={ph}
+                          onChange={setD(k)}
+                          autoFocus={k === "name"}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveEdit(s); if (e.key === "Escape") cancelEdit(); }}
+                        />
+                      </td>
+                    );
+                    return (
+                      <tr key={s.id} style={{ background: "#f8fafc" }}>
+                        <td className="tnum" style={{ color: "var(--muted)" }}>{i + 1}</td>
+                        {cell("name", 90, "이름")}
+                        {cell("school", 110, "학교")}
+                        {cell("grade", 60, "학년")}
+                        {cell("studentPhone", 140, "학생 연락처", true)}
+                        {cell("parentPhone", 140, "학부모 연락처", true)}
+                        <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                          <button className="btn sm" onClick={() => saveEdit(s)}>저장</button>
+                          <button className="link" style={{ marginLeft: 10 }} onClick={cancelEdit}>취소</button>
+                        </td>
+                      </tr>
+                    );
+                  }
+                  return (
+                    <tr key={s.id}>
+                      <td className="tnum" style={{ color: "var(--muted)" }}>{i + 1}</td>
+                      <td style={{ fontWeight: 600 }}>{s.name}</td>
+                      <td>{s.school || "–"}</td>
+                      <td>{s.grade || "–"}</td>
+                      <td className="tnum">{s.studentPhone || "–"}</td>
+                      <td className="tnum">{s.parentPhone || "–"}</td>
+                      <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                        <button className="link" onClick={() => startEdit(s)}>수정</button>
+                        <button className="del" style={{ marginLeft: 12 }} onClick={() => delStudent(s)}>삭제</button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
