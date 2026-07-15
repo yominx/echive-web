@@ -66,6 +66,8 @@
   .ans-cap{color:#0e7490}
   .ans-in{width:36px;padding:2px;text-align:center;border-radius:5px;font-size:11px;background:#ecfeff;border:1px solid #a5f3fc;color:#0e7490;font-weight:700}
   .ans-in::placeholder{color:#67e8f9;font-weight:400}
+  .ans-in.miss{background:#fff1f2;border-color:var(--rose)}
+  .ans-in.miss::placeholder{color:#fb7185}
   .ansna{display:block;font-size:9px;color:var(--muted);margin-top:6px;white-space:nowrap}
   /* card */
   .card{background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:0 1px 3px #0000000a}

@@ -71,6 +71,13 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
   const hwRanges = hwRangesOf(session);
   const mx = testMax(session);
   const target = num(session.testTotal) || 100;
+  // 정답이 설정되지 않은 객관식 문항 번호(채점 불가) — 상단 경고용
+  const missingAns = [];
+  for (let i = 0; i < qn; i++) {
+    if (session.test?.subj?.[i]) continue; // 주관식은 정답칸 없음
+    const a = session.test?.answers?.[i];
+    if (a == null || String(a).trim() === "") missingAns.push(i + 1);
+  }
 
   const setAtt = (sid, a) =>
     mutate(() => {
@@ -361,6 +368,11 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
           {mx !== target && <span className="maxwarn">⚠ 배점 합이 {target}점과 다릅니다</span>}
         </span>
       </div>
+      {missingAns.length > 0 && (
+        <div style={{ color: "var(--rose)", background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 9, padding: "9px 13px", fontSize: 13, fontWeight: 600, marginBottom: 10 }}>
+          ⚠ 정답이 설정되지 않은 객관식 문항이 있습니다 — {missingAns.join(", ")}번. 정답을 입력해야 채점됩니다.
+        </div>
+      )}
       <div className="panel scroll">
         <table style={{ minWidth: 260 + qn * 48 }}>
           <thead>
@@ -388,7 +400,7 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
                     ) : (
                       <>
                         <input
-                          className="ans-in tnum"
+                          className={"ans-in tnum" + (String(session.test?.answers?.[i] ?? "").trim() === "" ? " miss" : "")}
                           title="정답 (숫자만 · 입력하면 다음 칸으로 자동 이동)"
                           placeholder="정답"
                           data-c={i}
