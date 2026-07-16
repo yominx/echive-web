@@ -23,6 +23,7 @@ export const testMax = (session) => Math.round(effPoints(session).reduce((a, b) 
 
 // 객관식: 학생 답이 정답과 일치하면 정답. 주관식: 1=정답, 0·2=오답(수동).
 export function scoreOf(session, r) {
+  if (session.noTest) return null; // '테스트 없음' 차시는 점수 데이터 없음(집계 제외)
   const t = session.test;
   if (t && (num(t.qCount) || 0) > 0 && r.q) {
     const pts = effPoints(session);

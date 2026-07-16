@@ -78,6 +78,7 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
     const a = session.test?.answers?.[i];
     if (a == null || String(a).trim() === "") missingAns.push(i + 1);
   }
+  const noTest = !!session.noTest;
 
   const setAtt = (sid, a) =>
     mutate(() => {
@@ -196,6 +197,8 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
       session.test.subj ||= [];
       session.test.subj[i] = !session.test.subj[i];
     });
+
+  const toggleNoTest = () => mutate(() => (session.noTest = !session.noTest));
 
   // 정답칸: 숫자만 입력 + 입력 시 자동으로 다음 정답칸(주관식은 건너뜀)
   const ansKey = (e) => {
@@ -359,15 +362,29 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
       )}
 
       {/* 테스트 채점 */}
-      <div className="sec-t" style={{ justifyContent: "space-between" }}>
-        <span>테스트 채점</span>
-        <span style={{ fontWeight: 500, fontSize: 13, color: "var(--ink2)" }}>
-          문항 수
-          <input className="tnum" style={{ width: 56, padding: "5px 8px", margin: "0 6px" }} defaultValue={qn} key={"qc" + session.id} onBlur={(e) => setQCount(e.target.value)} />{" "}
-          · 만점 <b className={"tnum" + (mx !== target ? " maxbad" : "")}>{mx}</b>점
-          {mx !== target && <span className="maxwarn">⚠ 배점 합이 {target}점과 다릅니다</span>}
+      <div className="sec-t" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          테스트 채점
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 12, fontWeight: 600, color: noTest ? "var(--rose)" : "var(--muted)", border: "1px solid", borderColor: noTest ? "#fecdd3" : "var(--line)", background: noTest ? "#fff1f2" : "#fff", borderRadius: 8, padding: "3px 9px" }} title="이 차시는 테스트가 없음 — 평균·종합·안내카드에서 제외됩니다">
+            <input type="checkbox" checked={noTest} onChange={toggleNoTest} />
+            테스트 없음
+          </label>
         </span>
+        {!noTest && (
+          <span style={{ fontWeight: 500, fontSize: 13, color: "var(--ink2)" }}>
+            문항 수
+            <input className="tnum" style={{ width: 56, padding: "5px 8px", margin: "0 6px" }} defaultValue={qn} key={"qc" + session.id} onBlur={(e) => setQCount(e.target.value)} />{" "}
+            · 만점 <b className={"tnum" + (mx !== target ? " maxbad" : "")}>{mx}</b>점
+            {mx !== target && <span className="maxwarn">⚠ 배점 합이 {target}점과 다릅니다</span>}
+          </span>
+        )}
       </div>
+      {noTest ? (
+        <div className="empty" style={{ color: "var(--ink2)" }}>
+          이 차시는 <b>테스트 없음</b>으로 설정되어 있습니다. 반평균·종합 DATA·안내카드 그래프 등 <b>모든 점수 집계에서 제외</b>됩니다.
+        </div>
+      ) : (
+        <>
       {missingAns.length > 0 && (
         <div style={{ color: "var(--rose)", background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 9, padding: "9px 13px", fontSize: 13, fontWeight: 600, marginBottom: 10 }}>
           ⚠ 정답이 설정되지 않은 객관식 문항이 있습니다 — {missingAns.join(", ")}번. 정답을 입력해야 채점됩니다.
@@ -453,6 +470,8 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
       <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 10 }}>
         <b>객관식</b>은 문항별 <b>정답</b>을 넣고 학생 답을 입력하면 자동 대조됩니다. <b>주관식</b>은 정답칸 없이 <b>1</b>=정답, <b>0·2</b>=오답으로 직접 채점하세요. 숫자·온점(.)만 입력 · Enter/방향키로 이동.
       </p>
+        </>
+      )}
       </>
       )}
     </>
