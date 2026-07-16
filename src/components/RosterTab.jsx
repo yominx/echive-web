@@ -115,7 +115,7 @@ export default function RosterTab() {
   const delStudent = (s) => {
     if (confirm("이 학생을 삭제할까요?")) mutate((d) => (d.students = d.students.filter((x) => x.id !== s.id)));
   };
-  const toggleOpening = (s) => mutate(() => (s.openingSent = !s.openingSent));
+  const toggleOpening = (s, who) => mutate(() => (s[who] = !s[who]));
 
   return (
     <>
@@ -163,8 +163,8 @@ export default function RosterTab() {
             <table>
               <thead>
                 <tr>
-                  {["#", "이름", "학교", "학년", "학생 연락처", "학부모 연락처", "개강안내", ""].map((h, i) => (
-                    <th key={i} style={h === "개강안내" ? { textAlign: "center" } : undefined}>{h}</th>
+                  {["#", "이름", "학교", "학년", "학생 연락처", "학부모 연락처", "개강안내(학생)", "개강안내(학부모)", ""].map((h, i) => (
+                    <th key={i} style={h.startsWith("개강안내") ? { textAlign: "center" } : undefined}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -194,7 +194,10 @@ export default function RosterTab() {
                         {cell("studentPhone", 140, "학생 연락처", true)}
                         {cell("parentPhone", 140, "학부모 연락처", true)}
                         <td style={{ textAlign: "center" }}>
-                          <input type="checkbox" checked={!!s.openingSent} onChange={() => toggleOpening(s)} title="개강안내 문자 전송 완료" />
+                          <input type="checkbox" checked={!!s.openingSentStudent} onChange={() => toggleOpening(s, "openingSentStudent")} title="학생에게 개강안내 문자 전송 완료" />
+                        </td>
+                        <td style={{ textAlign: "center" }}>
+                          <input type="checkbox" checked={!!s.openingSentParent} onChange={() => toggleOpening(s, "openingSentParent")} title="학부모에게 개강안내 문자 전송 완료" />
                         </td>
                         <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                           <button className="btn sm" onClick={() => saveEdit(s)}>저장</button>
@@ -212,9 +215,15 @@ export default function RosterTab() {
                       <td className="tnum">{s.studentPhone || "–"}</td>
                       <td className="tnum">{s.parentPhone || "–"}</td>
                       <td style={{ textAlign: "center" }}>
-                        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer", color: s.openingSent ? "var(--emerald)" : "var(--muted)", fontSize: 12, fontWeight: 600 }} title="개강안내 문자 전송 여부">
-                          <input type="checkbox" checked={!!s.openingSent} onChange={() => toggleOpening(s)} />
-                          {s.openingSent ? "전송됨" : "미전송"}
+                        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer", color: s.openingSentStudent ? "var(--emerald)" : "var(--muted)", fontSize: 12, fontWeight: 600 }} title="학생 개강안내 문자 전송 여부">
+                          <input type="checkbox" checked={!!s.openingSentStudent} onChange={() => toggleOpening(s, "openingSentStudent")} />
+                          {s.openingSentStudent ? "전송됨" : "미전송"}
+                        </label>
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer", color: s.openingSentParent ? "var(--emerald)" : "var(--muted)", fontSize: 12, fontWeight: 600 }} title="학부모 개강안내 문자 전송 여부">
+                          <input type="checkbox" checked={!!s.openingSentParent} onChange={() => toggleOpening(s, "openingSentParent")} />
+                          {s.openingSentParent ? "전송됨" : "미전송"}
                         </label>
                       </td>
                       <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
