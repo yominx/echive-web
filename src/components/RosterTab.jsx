@@ -115,6 +115,7 @@ export default function RosterTab() {
   const delStudent = (s) => {
     if (confirm("이 학생을 삭제할까요?")) mutate((d) => (d.students = d.students.filter((x) => x.id !== s.id)));
   };
+  const toggleOpening = (s) => mutate(() => (s.openingSent = !s.openingSent));
 
   return (
     <>
@@ -162,8 +163,8 @@ export default function RosterTab() {
             <table>
               <thead>
                 <tr>
-                  {["#", "이름", "학교", "학년", "학생 연락처", "학부모 연락처", ""].map((h, i) => (
-                    <th key={i}>{h}</th>
+                  {["#", "이름", "학교", "학년", "학생 연락처", "학부모 연락처", "개강안내", ""].map((h, i) => (
+                    <th key={i} style={h === "개강안내" ? { textAlign: "center" } : undefined}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -192,6 +193,9 @@ export default function RosterTab() {
                         {cell("grade", 60, "학년")}
                         {cell("studentPhone", 140, "학생 연락처", true)}
                         {cell("parentPhone", 140, "학부모 연락처", true)}
+                        <td style={{ textAlign: "center" }}>
+                          <input type="checkbox" checked={!!s.openingSent} onChange={() => toggleOpening(s)} title="개강안내 문자 전송 완료" />
+                        </td>
                         <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                           <button className="btn sm" onClick={() => saveEdit(s)}>저장</button>
                           <button className="link" style={{ marginLeft: 10 }} onClick={cancelEdit}>취소</button>
@@ -207,6 +211,12 @@ export default function RosterTab() {
                       <td>{s.grade || "–"}</td>
                       <td className="tnum">{s.studentPhone || "–"}</td>
                       <td className="tnum">{s.parentPhone || "–"}</td>
+                      <td style={{ textAlign: "center" }}>
+                        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer", color: s.openingSent ? "var(--emerald)" : "var(--muted)", fontSize: 12, fontWeight: 600 }} title="개강안내 문자 전송 여부">
+                          <input type="checkbox" checked={!!s.openingSent} onChange={() => toggleOpening(s)} />
+                          {s.openingSent ? "전송됨" : "미전송"}
+                        </label>
+                      </td>
                       <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                         <button className="link" onClick={() => startEdit(s)}>수정</button>
                         <button className="del" style={{ marginLeft: 12 }} onClick={() => delStudent(s)}>삭제</button>
