@@ -190,10 +190,7 @@ export default function CardsTab() {
           <>
             <div className="charts">
               <div>
-                <div className="chart-t">
-                  {!hideTest && <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400, marginRight: 6 }}>최근 5차시</span>}
-                  테스트 점수 vs 평균
-                </div>
+                <div className="chart-t">{hideTest ? "테스트 점수 vs 평균" : "최근 5차시 테스트 점수 vs 평균"}</div>
                 {hideTest ? (
                   <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 16, background: "#f8fafc", border: "1px dashed var(--line)", borderRadius: 12, color: "var(--ink2)", fontWeight: 600 }}>
                     {className}{josaEunNeun(className)} 테스트를 실시하지 않습니다
@@ -209,10 +206,7 @@ export default function CardsTab() {
                 )}
               </div>
               <div>
-                <div className="chart-t">
-                  <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400, marginRight: 6 }}>최근 5차시</span>
-                  숙제 달성률 vs 평균 (%)
-                </div>
+                <div className="chart-t">최근 5차시 숙제 달성률 vs 평균 (%)</div>
                 <BarAvgChart data={view} valueKey="wbRate" avgKey="wbAvg" yLabel="달성률(%)" xLabel="차시" />
                 <div className="legend">
                   <span><i style={{ background: "var(--indigo)" }} />학생</span>
