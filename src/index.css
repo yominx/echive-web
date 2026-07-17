@@ -78,6 +78,7 @@
   .card-h .sub{color:#cbd5e1; font-size:14px; margin-top:2px}
   .card-h .eb{font-size:11px; letter-spacing:.25em; color:#a5b4fc; text-transform:uppercase}
   .summ{display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--line2)}
+  .summ.summ5{grid-template-columns:repeat(5,1fr)}
   .summ>div{padding:16px; text-align:center; border-left:1px solid var(--line2)} .summ>div:first-child{border-left:none}
   .summ b{font-size:22px; font-weight:800} .summ b i{font-size:13px; font-weight:600; color:var(--muted); font-style:normal; margin-left:2px}
   .summ span{display:block; font-size:11px; color:var(--muted); margin-top:4px}
@@ -88,5 +89,5 @@
   /* msg */
   .msgbox{width:100%;min-height:96px;font-family:inherit;font-size:13px;line-height:1.5;background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:9px 11px;resize:vertical;color:var(--ink)}
   .ph{display:inline-block;background:#eef2ff;color:var(--indigo-d);border-radius:5px;padding:1px 6px;font-size:11px;margin:2px 3px 2px 0;font-family:ui-monospace,monospace}
-  @media (max-width:640px){ .grid5{grid-template-columns:repeat(2,1fr)} .charts{grid-template-columns:1fr} .summ{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:640px){ .grid5{grid-template-columns:repeat(2,1fr)} .charts{grid-template-columns:1fr} .summ{grid-template-columns:repeat(2,1fr)} .summ.summ5{grid-template-columns:repeat(2,1fr)} }
   @media print{ header,nav,.noprint{display:none !important} main{padding:0} body{background:#fff} .card{border:none; box-shadow:none} }

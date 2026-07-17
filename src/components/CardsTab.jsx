@@ -133,7 +133,14 @@ export default function CardsTab() {
         <div className="card-h">
           <div>
             <div className="eb">학습 안내카드</div>
-            <div className="knm">{student.name}</div>
+            <div className="knm" style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+              {student.name}
+              {latest && (
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#a5b4fc", whiteSpace: "nowrap" }}>
+                  {latest.date || "날짜 없음"} · {latestChasi}차시
+                </span>
+              )}
+            </div>
             <div className="sub">{[student.school, student.grade].filter(Boolean).join(" · ") || "정보 없음"}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
@@ -141,30 +148,22 @@ export default function CardsTab() {
           </div>
         </div>
 
-        <div className="summ">
-          <div>
-            <b className="tnum" style={{ whiteSpace: "nowrap" }}>{latest ? latest.date || "날짜 없음" : "–"}</b>
-            <span>{latest ? `${latestChasi}차시` : "최근 차시"}</span>
-          </div>
-          <div>
-            <b className="tnum" style={{ whiteSpace: "nowrap" }}>
-              {latest && latest.score != null ? (
-                <>
-                  {latest.score}
-                  <i>점</i>
-                  {latest.rank != null && (
-                    <span style={{ display: "inline", fontSize: "inherit", color: "inherit", margin: 0, marginLeft: 14 }}>
-                      {latest.rank}
-                      <i> / {latest.graded}등</i>
-                    </span>
-                  )}
-                </>
-              ) : (
-                "–"
-              )}
-            </b>
-            <span>테스트 점수 및 등수</span>
-          </div>
+        <div className="summ summ5">
+          <Summ
+            label="테스트 점수"
+            value={latest && latest.score != null ? latest.score : "–"}
+            unit={latest && latest.score != null ? "점" : ""}
+          />
+          <Summ
+            label="반평균 점수"
+            value={latest && latest.avg != null ? latest.avg : "–"}
+            unit={latest && latest.avg != null ? "점" : ""}
+          />
+          <Summ
+            label="등수"
+            value={latest && latest.rank != null ? latest.rank : "–"}
+            unit={latest && latest.rank != null ? ` / ${latest.graded}등` : ""}
+          />
           <Summ
             label="이번 차시 숙제"
             value={latest && latest.wbRate != null ? Math.round(latest.wbRate) : "–"}
