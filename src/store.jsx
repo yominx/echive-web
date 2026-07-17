@@ -19,6 +19,25 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 const firstActiveClass = (db) => (db.classes.find((c) => !c.archived) ?? db.classes[0])?.id ?? null;
 const freshUi = (db) => ({ classId: firstActiveClass(db), tab: "attend", sess: null, card: null });
 
+// 마지막으로 보던 화면(반·시트·차시·안내카드 학생)을 저장/복원
+const UI_KEY = LS_KEY + "_ui";
+const VALID_TABS = new Set(["roster", "attend", "score", "card", "msg", "data"]);
+// 저장된 선택을 현재 DB 기준으로 검증 — 삭제/보관된 반·차시·학생이면 기본값으로 폴백
+function loadUi(db) {
+  const base = freshUi(db);
+  try {
+    const saved = JSON.parse(localStorage.getItem(UI_KEY) || "null");
+    if (!saved) return base;
+    const classId = saved.classId && db.classes.some((c) => c.id === saved.classId && !c.archived) ? saved.classId : base.classId;
+    const tab = VALID_TABS.has(saved.tab) ? saved.tab : base.tab;
+    const sess = saved.sess && db.sessions.some((s) => s.id === saved.sess && s.classId === classId) ? saved.sess : null;
+    const card = saved.card && db.students.some((s) => s.id === saved.card && s.classId === classId) ? saved.card : null;
+    return { classId, tab, sess, card };
+  } catch {
+    return base;
+  }
+}
+
 export function StoreProvider({ children }) {
   const dbRef = useRef(loadDB());
   const [, setVer] = useState(0);
@@ -27,8 +46,15 @@ export function StoreProvider({ children }) {
 
   const db = dbRef.current;
 
-  const [ui, setUiState] = useState(() => freshUi(dbRef.current));
+  const [ui, setUiState] = useState(() => loadUi(dbRef.current));
   const setUi = useCallback((patch) => setUiState((u) => ({ ...u, ...(typeof patch === "function" ? patch(u) : patch) })), []);
+
+  // 화면 선택 상태를 저장 → 새로고침/재접속 시 마지막 화면 복원
+  useEffect(() => {
+    try {
+      localStorage.setItem(UI_KEY, JSON.stringify(ui));
+    } catch {}
+  }, [ui]);
 
   // 현재 로그인 사용자 + 주인 여부 (App 의 인증 흐름에서 설정)
   const [me, setMe] = useState({ email: "", owner: false });
