@@ -148,14 +148,14 @@ export default function CardsTab() {
           </div>
           <div>
             <b className="tnum" style={{ whiteSpace: "nowrap" }}>
-              {latest && latest.rank != null ? (
+              {latest && latest.score != null ? (
                 <>
-                  {latest.rank}
-                  <i> / {latest.graded}</i>
-                  {latest.score != null && (
+                  {latest.score}
+                  <i>점</i>
+                  {latest.rank != null && (
                     <span style={{ display: "inline", fontSize: "inherit", color: "inherit", margin: 0, marginLeft: 14 }}>
-                      {latest.score}
-                      <i>점</i>
+                      {latest.rank}
+                      <i> / {latest.graded}등</i>
                     </span>
                   )}
                 </>
@@ -163,7 +163,7 @@ export default function CardsTab() {
                 "–"
               )}
             </b>
-            <span>이번 차시 등수</span>
+            <span>테스트 점수 및 등수</span>
           </div>
           <Summ
             label="이번 차시 숙제"
