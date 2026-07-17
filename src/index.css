@@ -26,7 +26,7 @@
   .panel{background:#fff; border:1px solid var(--line); border-radius:13px} .pad{padding:16px}
   .row{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
   .btn{padding:9px 15px; border-radius:9px; background:var(--indigo); color:#fff; font-weight:600} .btn:hover{background:var(--indigo-d)}
-  .btn.dark{background:#0f172a} .btn.ghost{background:transparent; color:var(--ink2)} .btn.ghost:hover{color:var(--ink)}
+  .btn.dark{background:#0f172a}
   .btn.line{background:#fff; border:1px solid var(--line); color:var(--ink2)} .btn.line:hover{background:#f1f5f9}
   .btn.sm{padding:5px 10px;font-size:12px}
   .link{color:var(--indigo); font-size:12px} .link:hover{text-decoration:underline}
@@ -76,7 +76,6 @@
   .card{background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:0 1px 3px #0000000a}
   .card-h{background:#0f172a; color:#fff; padding:20px 24px; display:flex; align-items:flex-end; justify-content:space-between}
   .card-h .knm{font-size:24px; font-weight:800; margin-top:4px}
-  .card-h .sub{color:#cbd5e1; font-size:14px; margin-top:2px}
   .card-h .eb{font-size:11px; letter-spacing:.25em; color:#a5b4fc; text-transform:uppercase}
   .summ{display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--line2)}
   .summ>div{padding:16px; text-align:center; border-left:1px solid var(--line2)} .summ>div:first-child{border-left:none}

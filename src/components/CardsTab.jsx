@@ -97,7 +97,6 @@ export default function CardsTab() {
 
   // 상단 "이번 차시" = 선택 차시 / 그래프·표: 선택 차시까지 최근 5차시
   // 평균(등수·숙제·출석): 1차시 ~ 선택 차시까지 누적
-  const all = timeline;
   const view = curIdx >= 0 ? timeline.slice(Math.max(0, curIdx - 4), curIdx + 1) : [];
   const upto = curIdx >= 0 ? timeline.slice(0, curIdx + 1) : [];
   const avgRank = mean(upto.filter((t) => t.rank != null).map((t) => t.rank));
@@ -182,7 +181,7 @@ export default function CardsTab() {
           </div>
         </div>
 
-        {all.length === 0 ? (
+        {timeline.length === 0 ? (
           <div style={{ padding: 40 }}>
             <div className="empty">아직 채점된 차시가 없습니다. ② 출결·채점에서 입력해 주세요.</div>
           </div>

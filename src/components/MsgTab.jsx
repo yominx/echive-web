@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useStore } from "../store.jsx";
 import { sessionStats, fillTemplate, copyText, dateMismatch } from "../lib/calc.js";
-import { classSessions, classStudents, resolveSessionId } from "../lib/session.js";
+import { classSessions, classStudents } from "../lib/session.js";
 
 const PLACEHOLDERS = ["{이름}", "{학교}", "{차시}", "{날짜}", "{진도}", "{점수}", "{반평균}", "{등수}", "{달성률}", "{숙제}"];
 

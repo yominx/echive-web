@@ -69,12 +69,8 @@ export function hwItems(session) {
   return items;
 }
 
-export function hwCount(session) {
-  return hwItems(session).length;
-}
-
 // 완성도는 '필수' 문항만 대상으로 계산 (선택 문항은 제외)
-export function hwRate(session, r) {
+function hwRate(session, r) {
   const items = hwItems(session);
   const reqIdx = [];
   items.forEach((it, i) => {
@@ -138,7 +134,7 @@ export function fillTemplate(tmpl, { student, session, row, rank, graded, avg, h
 }
 
 /* 명단 붙여넣기/엑셀 열 매핑 */
-export function pickCols(header) {
+function pickCols(header) {
   const idx = {};
   header.forEach((h, i) => {
     const s = String(h == null ? "" : h).replace(/\s/g, "");

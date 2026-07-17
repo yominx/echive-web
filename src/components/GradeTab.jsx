@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useStore } from "../store.jsx";
 import { ATT } from "../lib/constants.js";
-import { num, one, pct, rankText, effPoints, testMax, scoreOf, hwCount, hwItems, hwRangesOf, sessionStats } from "../lib/calc.js";
+import { num, one, pct, rankText, effPoints, testMax, scoreOf, hwItems, hwRangesOf, sessionStats } from "../lib/calc.js";
 import { classSessions, classStudents, resolveSessionId } from "../lib/session.js";
 
 const Mini = ({ label, value }) => (
