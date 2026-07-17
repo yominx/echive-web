@@ -115,7 +115,7 @@ export default function RosterTab() {
   const delStudent = (s) => {
     if (confirm("이 학생을 삭제할까요?")) mutate((d) => (d.students = d.students.filter((x) => x.id !== s.id)));
   };
-  const toggleOpening = (s, who) => mutate(() => (s[who] = !s[who]));
+  const toggleFlag = (s, who) => mutate(() => (s[who] = !s[who]));
 
   return (
     <>
@@ -163,8 +163,8 @@ export default function RosterTab() {
             <table>
               <thead>
                 <tr>
-                  {["#", "이름", "학교", "학년", "학생 연락처", "학부모 연락처", "개강안내(학생)", "개강안내(학부모)", ""].map((h, i) => (
-                    <th key={i} style={h.startsWith("개강안내") ? { textAlign: "center" } : undefined}>{h}</th>
+                  {["#", "이름", "학교", "학년", "학생 연락처", "학부모 연락처", "개강안내(학생)", "개강안내(학부모)", "수강료", "교재비", ""].map((h, i) => (
+                    <th key={i} style={h.startsWith("개강안내") || h === "수강료" || h === "교재비" ? { textAlign: "center" } : undefined}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -194,10 +194,16 @@ export default function RosterTab() {
                         {cell("studentPhone", 140, "학생 연락처", true)}
                         {cell("parentPhone", 140, "학부모 연락처", true)}
                         <td style={{ textAlign: "center" }}>
-                          <input type="checkbox" checked={!!s.openingSentStudent} onChange={() => toggleOpening(s, "openingSentStudent")} title="학생에게 개강안내 문자 전송 완료" />
+                          <input type="checkbox" checked={!!s.openingSentStudent} onChange={() => toggleFlag(s, "openingSentStudent")} title="학생에게 개강안내 문자 전송 완료" />
                         </td>
                         <td style={{ textAlign: "center" }}>
-                          <input type="checkbox" checked={!!s.openingSentParent} onChange={() => toggleOpening(s, "openingSentParent")} title="학부모에게 개강안내 문자 전송 완료" />
+                          <input type="checkbox" checked={!!s.openingSentParent} onChange={() => toggleFlag(s, "openingSentParent")} title="학부모에게 개강안내 문자 전송 완료" />
+                        </td>
+                        <td style={{ textAlign: "center" }}>
+                          <input type="checkbox" className="chk-pay" checked={!!s.paidTuition} onChange={() => toggleFlag(s, "paidTuition")} title="수강료 납부 완료" />
+                        </td>
+                        <td style={{ textAlign: "center" }}>
+                          <input type="checkbox" className="chk-pay" checked={!!s.paidBook} onChange={() => toggleFlag(s, "paidBook")} title="교재비 납부 완료" />
                         </td>
                         <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                           <button className="btn sm" onClick={() => saveEdit(s)}>저장</button>
@@ -215,10 +221,16 @@ export default function RosterTab() {
                       <td className="tnum">{s.studentPhone || "–"}</td>
                       <td className="tnum">{s.parentPhone || "–"}</td>
                       <td style={{ textAlign: "center" }}>
-                        <input type="checkbox" checked={!!s.openingSentStudent} onChange={() => toggleOpening(s, "openingSentStudent")} title="학생 개강안내 문자 전송 여부" style={{ cursor: "pointer" }} />
+                        <input type="checkbox" checked={!!s.openingSentStudent} onChange={() => toggleFlag(s, "openingSentStudent")} title="학생 개강안내 문자 전송 여부" style={{ cursor: "pointer" }} />
                       </td>
                       <td style={{ textAlign: "center" }}>
-                        <input type="checkbox" checked={!!s.openingSentParent} onChange={() => toggleOpening(s, "openingSentParent")} title="학부모 개강안내 문자 전송 여부" style={{ cursor: "pointer" }} />
+                        <input type="checkbox" checked={!!s.openingSentParent} onChange={() => toggleFlag(s, "openingSentParent")} title="학부모 개강안내 문자 전송 여부" style={{ cursor: "pointer" }} />
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <input type="checkbox" className="chk-pay" checked={!!s.paidTuition} onChange={() => toggleFlag(s, "paidTuition")} title="수강료 납부 여부" style={{ cursor: "pointer" }} />
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <input type="checkbox" className="chk-pay" checked={!!s.paidBook} onChange={() => toggleFlag(s, "paidBook")} title="교재비 납부 여부" style={{ cursor: "pointer" }} />
                       </td>
                       <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                         <button className="link" onClick={() => startEdit(s)}>수정</button>

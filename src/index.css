@@ -12,6 +12,7 @@
   input,select,textarea{font-family:inherit; font-size:14px; color:var(--ink); padding:8px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; outline:none}
   input[type="checkbox"]{width:16px; height:16px; padding:0; border-radius:4px; accent-color:var(--indigo); cursor:pointer; vertical-align:middle; box-shadow:none}
   input[type="checkbox"]:focus{box-shadow:none}
+  input[type="checkbox"].chk-pay{accent-color:var(--emerald)}
   input:focus,select:focus,textarea:focus{border-color:#a5b4fc; box-shadow:0 0 0 3px #e0e7ff}
   header{background:#fff; border-bottom:1px solid var(--line)}
   nav{background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20}
