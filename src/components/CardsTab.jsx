@@ -132,16 +132,15 @@ export default function CardsTab() {
       <div className="card" ref={cardRef}>
         <div className="card-h">
           <div>
-            <div className="eb">학습 안내카드</div>
+            <div className="eb" style={{ letterSpacing: "normal", textTransform: "none", fontSize: 12 }}>
+              {latest ? `${latest.date || "날짜 없음"} · ${latestChasi}차시` : " "}
+            </div>
             <div className="knm" style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
               {student.name}
-              {latest && (
-                <span style={{ fontSize: 14, fontWeight: 600, color: "#a5b4fc", whiteSpace: "nowrap" }}>
-                  {latest.date || "날짜 없음"} · {latestChasi}차시
-                </span>
-              )}
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#cbd5e1", whiteSpace: "nowrap" }}>
+                {[student.school, student.grade].filter(Boolean).join(" · ") || "정보 없음"}
+              </span>
             </div>
-            <div className="sub">{[student.school, student.grade].filter(Boolean).join(" · ") || "정보 없음"}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
             <img src={LOGO_SRC} alt="이카이브" style={{ height: 34, width: "auto", display: "block" }} />
