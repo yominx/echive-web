@@ -83,7 +83,7 @@
   .summ span{display:block; font-size:11px; color:var(--muted); margin-top:4px}
   .charts{display:grid; grid-template-columns:1fr 1fr; gap:24px; padding:22px}
   .chart-t{font-weight:700; color:#334155; margin-bottom:8px; font-size:14px}
-  .legend{display:flex; gap:14px; font-size:11px; color:var(--ink2); margin-top:6px}
+  .legend{display:flex; justify-content:center; gap:16px; font-size:11px; color:var(--ink2); margin-top:8px}
   .legend i{display:inline-block; width:11px; height:3px; border-radius:2px; margin-right:4px; vertical-align:middle}
   /* msg */
   .msgbox{width:100%;min-height:96px;font-family:inherit;font-size:13px;line-height:1.5;background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:9px 11px;resize:vertical;color:var(--ink)}

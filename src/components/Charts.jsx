@@ -12,13 +12,15 @@ const linePath = (data, key, x, y) => {
   return d;
 };
 
-export function BarAvgChart({ data, valueKey, avgKey }) {
-  const W = 440, H = 200, pl = 34, pr = 10, pt = 12, ih = H - pt - 26, iw = W - pl - pr, n = data.length;
+export function BarAvgChart({ data, valueKey, avgKey, yLabel, xLabel }) {
+  const W = 460, H = 216, pl = 52, pr = 12, pt = 12, axis = 42;
+  const ih = H - pt - axis, iw = W - pl - pr, n = data.length;
   const vals = data.flatMap((d) => [d[valueKey], d[avgKey]]).filter((v) => v != null);
   const max = Math.max(100, ...vals);
   const min = Math.min(0, ...vals);
   const x = (i) => pl + (n <= 1 ? iw / 2 : (iw * i) / (n - 1));
   const y = (v) => pt + ih - ((v - min) / (max - min || 1)) * ih;
+  const ymid = pt + ih / 2;
 
   const sPath = linePath(data, valueKey, x, y);
   const aPath = linePath(data, avgKey, x, y);
@@ -30,7 +32,7 @@ export function BarAvgChart({ data, valueKey, avgKey }) {
         return (
           <g key={idx}>
             <line x1={pl} y1={yy} x2={W - pr} y2={yy} stroke="#eef1f5" />
-            <text x={pl - 6} y={yy + 3} fontSize="10" fill="#94a3b8" textAnchor="end">
+            <text x={pl - 7} y={yy + 3} fontSize="10" fill="#94a3b8" textAnchor="end">
               {Math.round(max - (max - min) * t)}
             </text>
           </g>
@@ -42,12 +44,24 @@ export function BarAvgChart({ data, valueKey, avgKey }) {
       {/* 학생: 실선 + 점 (indigo) */}
       {sPath && <path d={sPath} fill="none" stroke="var(--indigo)" strokeWidth="2.4" strokeLinejoin="round" />}
       {data.map((d, i) => (d[valueKey] != null ? <circle key={"s" + i} cx={x(i)} cy={y(d[valueKey])} r="3.2" fill="var(--indigo)" /> : null))}
+      {/* x축 눈금(차시 번호) */}
       {data.map((d, i) =>
         n <= 8 || i % 2 === 0 ? (
-          <text key={"l" + i} x={x(i)} y={H - 8} fontSize="9" fill="#94a3b8" textAnchor="middle">
+          <text key={"l" + i} x={x(i)} y={pt + ih + 15} fontSize="9" fill="#94a3b8" textAnchor="middle">
             {String(d.chasi).replace("차시", "")}
           </text>
         ) : null
+      )}
+      {/* 축 제목 */}
+      {xLabel && (
+        <text x={pl + iw / 2} y={H - 5} fontSize="10.5" fill="#64748b" textAnchor="middle" fontWeight="600">
+          {xLabel}
+        </text>
+      )}
+      {yLabel && (
+        <text x={11} y={ymid} fontSize="10.5" fill="#64748b" textAnchor="middle" fontWeight="600" transform={`rotate(-90 11 ${ymid})`}>
+          {yLabel}
+        </text>
       )}
     </svg>
   );

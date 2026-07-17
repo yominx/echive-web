@@ -15,11 +15,24 @@ const Summ = ({ label, value, unit }) => (
   </div>
 );
 
+// 은/는 조사 선택 (받침 있으면 '은', 없으면 '는')
+const josaEunNeun = (word) => {
+  const c = (word || "").trim().slice(-1);
+  if (!c) return "는";
+  const code = c.charCodeAt(0);
+  if (code >= 0xac00 && code <= 0xd7a3) return (code - 0xac00) % 28 !== 0 ? "은" : "는";
+  return "는";
+};
+
 export default function CardsTab() {
-  const { db, ui, setUi, recOf } = useStore();
+  const { db, ui, setUi, recOf, mutate } = useStore();
   const cardRef = useRef(null);
   const students = classStudents(db, ui.classId);
   const sessions = classSessions(db, ui.classId);
+  const cls = db.classes.find((c) => c.id === ui.classId);
+  const className = cls?.name || "";
+  const hideTest = !!cls?.hideTest;
+  const toggleHideTest = () => mutate((d) => { const c = d.classes.find((x) => x.id === ui.classId); if (c) c.hideTest = !c.hideTest; });
 
   if (students.length === 0) return <div className="empty">먼저 ① 명단에서 이 반의 학생을 등록하세요.</div>;
 
@@ -110,6 +123,7 @@ export default function CardsTab() {
               </option>
             ))}
           </select>
+          <button className="btn line" onClick={toggleHideTest}>{hideTest ? "테스트 그래프 표시" : "테스트 그래프 가리기"}</button>
           <button className="btn line" onClick={captureCard}>이미지 저장</button>
           <button className="btn line" onClick={() => window.print()}>인쇄 / PDF</button>
         </div>
@@ -160,20 +174,28 @@ export default function CardsTab() {
               <div>
                 <div className="chart-t" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                   테스트 점수 vs 반평균
-                  <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}>최근 5차시</span>
+                  {!hideTest && <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}>최근 5차시</span>}
                 </div>
-                <BarAvgChart data={view} valueKey="score" avgKey="avg" />
-                <div className="legend">
-                  <span><i style={{ background: "var(--indigo)" }} />학생</span>
-                  <span><i style={{ background: "var(--amber)" }} />반평균</span>
-                </div>
+                {hideTest ? (
+                  <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 16, background: "#f8fafc", border: "1px dashed var(--line)", borderRadius: 12, color: "var(--ink2)", fontWeight: 600 }}>
+                    {className}{josaEunNeun(className)} 테스트를 실시하지 않습니다
+                  </div>
+                ) : (
+                  <>
+                    <BarAvgChart data={view} valueKey="score" avgKey="avg" yLabel="점수" xLabel="차시" />
+                    <div className="legend">
+                      <span><i style={{ background: "var(--indigo)" }} />학생</span>
+                      <span><i style={{ background: "var(--amber)" }} />반평균</span>
+                    </div>
+                  </>
+                )}
               </div>
               <div>
                 <div className="chart-t" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                   숙제 달성률 vs 반평균 (%)
                   <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}>최근 5차시</span>
                 </div>
-                <BarAvgChart data={view} valueKey="wbRate" avgKey="wbAvg" />
+                <BarAvgChart data={view} valueKey="wbRate" avgKey="wbAvg" yLabel="달성률(%)" xLabel="차시" />
                 <div className="legend">
                   <span><i style={{ background: "var(--indigo)" }} />학생</span>
                   <span><i style={{ background: "var(--amber)" }} />반평균</span>
