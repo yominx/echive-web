@@ -146,11 +146,25 @@ export default function CardsTab() {
             <b className="tnum" style={{ whiteSpace: "nowrap" }}>{latest ? latest.date || "날짜 없음" : "–"}</b>
             <span>{latest ? `${latestChasi}차시` : "최근 차시"}</span>
           </div>
-          <Summ
-            label="이번 차시 등수"
-            value={latest && latest.rank != null ? latest.rank : "–"}
-            unit={latest && latest.rank != null ? ` / ${latest.graded}${latest.score != null ? ` · ${latest.score}점` : ""}` : ""}
-          />
+          <div>
+            <b className="tnum" style={{ whiteSpace: "nowrap" }}>
+              {latest && latest.rank != null ? (
+                <>
+                  {latest.rank}
+                  <i> / {latest.graded}</i>
+                  {latest.score != null && (
+                    <span style={{ display: "inline", fontSize: "inherit", color: "inherit", margin: 0, marginLeft: 14 }}>
+                      {latest.score}
+                      <i>점</i>
+                    </span>
+                  )}
+                </>
+              ) : (
+                "–"
+              )}
+            </b>
+            <span>이번 차시 등수</span>
+          </div>
           <Summ
             label="이번 차시 숙제"
             value={latest && latest.wbRate != null ? Math.round(latest.wbRate) : "–"}
