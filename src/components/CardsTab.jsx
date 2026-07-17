@@ -147,17 +147,23 @@ export default function CardsTab() {
           </div>
         </div>
 
-        <div className="summ summ5">
-          <Summ
-            label="테스트 점수"
-            value={latest && latest.score != null ? latest.score : "–"}
-            unit={latest && latest.score != null ? "점" : ""}
-          />
-          <Summ
-            label="반평균 점수"
-            value={latest && latest.avg != null ? latest.avg : "–"}
-            unit={latest && latest.avg != null ? "점" : ""}
-          />
+        <div className="summ">
+          <div>
+            <b className="tnum" style={{ whiteSpace: "nowrap", color: "var(--indigo)" }}>
+              {latest && latest.score != null ? (
+                <>
+                  {latest.score}
+                  <i style={{ color: "var(--indigo)" }}>점</i>
+                </>
+              ) : (
+                "–"
+              )}
+            </b>
+            <div style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 600, marginTop: 3, whiteSpace: "nowrap" }}>
+              반평균 {latest && latest.avg != null ? latest.avg : "–"}점
+            </div>
+            <span>내 테스트 점수</span>
+          </div>
           <Summ
             label="등수"
             value={latest && latest.rank != null ? latest.rank : "–"}
