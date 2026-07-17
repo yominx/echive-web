@@ -110,22 +110,22 @@ export default function CardsTab() {
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
-        <div>
-          <h2>안내카드</h2>
-          <p className="desc">상단 요약은 전체 차시, 그래프·표는 최근 5차시 기준으로 자동 정리됩니다. 그대로 학부모께 공유하세요.</p>
-        </div>
-        <div className="row noprint">
-          <select style={{ minWidth: 130 }} value={cardId} onChange={(e) => setUi({ card: e.target.value })}>
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+      <div style={{ marginBottom: 18 }}>
+        <h2>안내카드</h2>
+        <p className="desc">상단 요약은 전체 차시, 그래프·표는 최근 5차시 기준으로 자동 정리됩니다. 그대로 학부모께 공유하세요.</p>
+        <div className="row noprint" style={{ justifyContent: "space-between", marginTop: 10 }}>
           <button className="btn line" onClick={toggleHideTest}>{hideTest ? "테스트 그래프 표시" : "테스트 그래프 가리기"}</button>
-          <button className="btn line" onClick={captureCard}>이미지 저장</button>
-          <button className="btn line" onClick={() => window.print()}>인쇄 / PDF</button>
+          <span className="row">
+            <button className="btn line" onClick={() => window.print()}>인쇄 / PDF</button>
+            <button className="btn line" onClick={captureCard}>이미지 저장</button>
+            <select style={{ minWidth: 130 }} value={cardId} onChange={(e) => setUi({ card: e.target.value })}>
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </span>
         </div>
       </div>
 
@@ -149,7 +149,7 @@ export default function CardsTab() {
           <Summ
             label="이번 차시 등수"
             value={latest && latest.rank != null ? latest.rank : "–"}
-            unit={latest && latest.rank != null ? " / " + latest.graded : ""}
+            unit={latest && latest.rank != null ? ` / ${latest.graded}${latest.score != null ? ` · ${latest.score}점` : ""}` : ""}
           />
           <Summ
             label="이번 차시 숙제"

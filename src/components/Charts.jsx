@@ -18,7 +18,8 @@ export function BarAvgChart({ data, valueKey, avgKey, yLabel, xLabel }) {
   const vals = data.flatMap((d) => [d[valueKey], d[avgKey]]).filter((v) => v != null);
   const max = Math.max(100, ...vals);
   const min = Math.min(0, ...vals);
-  const x = (i) => pl + (n <= 1 ? iw / 2 : (iw * i) / (n - 1));
+  const gx = 22; // 좌우 안쪽 여백 — 첫/마지막 차시가 구석에 붙지 않도록
+  const x = (i) => pl + gx + (n <= 1 ? (iw - 2 * gx) / 2 : ((iw - 2 * gx) * i) / (n - 1));
   const y = (v) => pt + ih - ((v - min) / (max - min || 1)) * ih;
   const ymid = pt + ih / 2;
 
