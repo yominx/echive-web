@@ -7,7 +7,7 @@ service cloud.firestore {
     function isOwner() {
       return request.auth != null
         && request.auth.token.email_verified == true
-        && request.auth.token.email in ['dlgur2419304@gmail.com', 'acgnkpiyrw@gmail.com'];
+        && request.auth.token.email in ['dlgur2419304@gmail.com', 'acgnkpiyrw@gmail.com', 'wjsk38@gmail.com'];
     }
 
     // 허용된 선생님 = 주인이거나, teachers 컬렉션에 이메일 문서가 있는 경우
