@@ -111,7 +111,7 @@ export default function CardsTab() {
     <>
       <div style={{ marginBottom: 18 }}>
         <h2>안내카드</h2>
-        <p className="desc">상단 요약은 전체 차시, 그래프·표는 최근 5차시 기준으로 자동 정리됩니다. 그대로 학부모께 공유하세요.</p>
+        <p className="desc">상단 요약은 전체 차시, 그래프·표는 최근 5차시 기준으로 자동 정리됩니다.</p>
         <div className="row noprint" style={{ justifyContent: "space-between", marginTop: 10 }}>
           <button className="btn line" onClick={toggleHideTest}>{hideTest ? "테스트 그래프 표시" : "테스트 그래프 가리기"}</button>
           <span className="row">
