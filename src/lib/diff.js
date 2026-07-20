@@ -33,6 +33,7 @@ export function summarizeChanges(prev, next) {
       continue;
     }
     if (pc[id].name !== nc[id].name) out.push(`반 이름 변경: ${pc[id].name} → ${nc[id].name}`);
+    if ((pc[id].tmpl || "") !== (nc[id].tmpl || "")) out.push(`안내문자 템플릿 수정: ${nc[id].name}`);
     const wasArch = !!pc[id].archived, isArch = !!nc[id].archived;
     const wasDel = !!pc[id].deleteAt, isDel = !!nc[id].deleteAt;
     if (!wasDel && isDel) out.push(`반 삭제 예약(30일 후): ${nc[id].name}`);

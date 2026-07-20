@@ -42,7 +42,10 @@ export default function MsgTab() {
   const sessId = ui.sess && sessions.some((s) => s.id === ui.sess) ? ui.sess : defId;
   const session = sessions.find((s) => s.id === sessId);
   const st = sessionStats(session, recOf(session.id), students);
-  const tmpl = db.settings.tmpl;
+  // 안내문자 템플릿: 반별로 저장(cls.tmpl). 아직 없으면 전역 기본값(db.settings.tmpl)을 사용.
+  const cls = db.classes.find((c) => c.id === ui.classId);
+  const tmpl = cls?.tmpl != null ? cls.tmpl : db.settings?.tmpl || "";
+  const setTmpl = (val) => mutate((d) => { const c = d.classes.find((x) => x.id === ui.classId); if (c) c.tmpl = val; });
   const commonHw = session.homework || "";
   const progress = session.progress || "";
 
@@ -56,8 +59,7 @@ export default function MsgTab() {
     const t = tmplRef.current;
     const start = t?.selectionStart ?? tmpl.length;
     const end = t?.selectionEnd ?? start;
-    const next = tmpl.slice(0, start) + ph + tmpl.slice(end);
-    mutate((d) => (d.settings.tmpl = next));
+    setTmpl(tmpl.slice(0, start) + ph + tmpl.slice(end));
   };
 
   return (
@@ -107,13 +109,16 @@ export default function MsgTab() {
           </label>
         </div>
         <label className="field">
-          <span>안내문자 템플릿{!owner && <b style={{ color: "var(--muted)", fontWeight: 600 }}> · 주인만 수정</b>}</span>
+          <span>
+            안내문자 템플릿 <b style={{ color: "var(--muted)", fontWeight: 400 }}>· 이 반 전용</b>
+            {!owner && <b style={{ color: "var(--muted)", fontWeight: 600 }}> · 주인만 수정</b>}
+          </span>
           <textarea
             ref={tmplRef}
             className="msgbox"
             value={tmpl}
             readOnly={!owner}
-            onChange={(e) => owner && mutate((d) => (d.settings.tmpl = e.target.value))}
+            onChange={(e) => owner && setTmpl(e.target.value)}
           />
         </label>
         {owner && (
