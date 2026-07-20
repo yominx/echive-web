@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "../store.jsx";
 import { ATT } from "../lib/constants.js";
 import { num, one, pct, rankText, effPoints, testMax, scoreOf, hwItems, hwRangesOf, sessionStats } from "../lib/calc.js";
@@ -18,6 +18,9 @@ export default function GradeTab({ mode = "score" }) {
   const students = classStudents(db, ui.classId);
   const sessions = classSessions(db, ui.classId);
   const session = sessions.find((s) => s.id === resolveSessionId(db, sessions, ui.sess)) || null;
+  // 현재 채점 차시의 '이전 차시' (차시순 바로 앞) — 이전차시 숙제 보기용
+  const sIdx = session ? sessions.findIndex((s) => s.id === session.id) : -1;
+  const prevSession = sIdx > 0 ? sessions[sIdx - 1] : null;
 
   // 레거시 차시에 test 객체 보정
   useEffect(() => {
@@ -52,15 +55,16 @@ export default function GradeTab({ mode = "score" }) {
         {!session ? (
           <div className="empty">상단 오른쪽에서 차시를 선택하거나, 「차시 생성기」로 차시를 만들어 주세요.</div>
         ) : (
-          <GradeBody bodyRef={bodyRef} session={session} students={students} store={{ mutate, recOf, recFor }} mode={mode} />
+          <GradeBody bodyRef={bodyRef} session={session} prevSession={prevSession} students={students} store={{ mutate, recOf, recFor }} mode={mode} />
         )}
       </div>
     </div>
   );
 }
 
-function GradeBody({ bodyRef, session, students, store, mode }) {
+function GradeBody({ bodyRef, session, prevSession, students, store, mode }) {
   const { mutate, recOf, recFor } = store;
+  const [hwView, setHwView] = useState(null); // null | "common" | "students" — 이전차시 숙제 보기
   const rec = recOf(session.id);
   const st = sessionStats(session, rec, students);
   const boost = st.rows.filter((r) => r.wbRate != null && r.wbRate <= 65).length;
@@ -69,6 +73,10 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
   const hwItemList = hwItems(session);
   const hn = hwItemList.length;
   const hwRanges = hwRangesOf(session);
+  // 이전 차시 ⑤안내·숙제의 학생별 '이 학생만 다른 숙제' (입력된 것만)
+  const prevStudentHws = prevSession
+    ? students.map((s) => ({ name: s.name, hw: String(recOf(prevSession.id)[s.id]?.hw || "").trim() })).filter((x) => x.hw)
+    : [];
   const mx = testMax(session);
   const target = num(session.testTotal) || 100;
   // 정답이 설정되지 않은 객관식 문항 번호(채점 불가) — 상단 경고용
@@ -287,7 +295,11 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
       <>
       {/* 숙제 채점 */}
       <div className="sec-t" style={{ justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>숙제 채점</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          숙제 채점
+          <button className={"btn line sm" + (hwView === "common" ? " on" : "")} style={hwView === "common" ? { background: "#eef2ff", borderColor: "#c7d2fe", color: "var(--indigo-d)" } : undefined} onClick={() => setHwView((v) => (v === "common" ? null : "common"))}>이전차시 숙제보기</button>
+          <button className={"btn line sm" + (hwView === "students" ? " on" : "")} style={hwView === "students" ? { background: "#eef2ff", borderColor: "#c7d2fe", color: "var(--indigo-d)" } : undefined} onClick={() => setHwView((v) => (v === "students" ? null : "students"))}>학생별 숙제보기</button>
+        </span>
         <span style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", fontWeight: 500, fontSize: 13, color: "var(--ink2)" }}>
           {hwRanges.map((rg, i) => (
             <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 3, border: "1px solid var(--line)", borderRadius: 8, padding: "3px 6px" }}>
@@ -307,6 +319,37 @@ function GradeBody({ bodyRef, session, students, store, mode }) {
           <span style={{ color: "var(--muted)", fontSize: 12 }}>· {hn}문항</span>
         </span>
       </div>
+      {hwView && (
+        <div className="panel pad" style={{ marginBottom: 10, background: "#f8fafc" }}>
+          {!prevSession ? (
+            <div style={{ color: "var(--muted)", fontSize: 13 }}>이전 차시가 없습니다.</div>
+          ) : hwView === "common" ? (
+            <>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{prevSession.chasi}차시 공통 숙제</div>
+              {String(prevSession.homework || "").trim() ? (
+                <div style={{ whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.6 }}>{prevSession.homework}</div>
+              ) : (
+                <div style={{ color: "var(--muted)", fontSize: 13 }}>입력된 공통 숙제가 없습니다.</div>
+              )}
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{prevSession.chasi}차시 · 이 학생만 다른 숙제</div>
+              {prevStudentHws.length === 0 ? (
+                <div style={{ color: "var(--muted)", fontSize: 13 }}>학생별로 다르게 낸 숙제가 없습니다.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  {prevStudentHws.map((x, i) => (
+                    <div key={i} style={{ fontSize: 13 }}>
+                      <b style={{ fontWeight: 700 }}>{x.name}</b> <span style={{ color: "var(--ink2)" }}>· {x.hw}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
       {hn === 0 ? (
         <div className="empty">「+ 범위 추가」로 숙제 범위를 넣으면 채점 칸이 생깁니다. (예: 1~5, 12~15 · 각 범위마다 필수/선택 지정)</div>
       ) : (
