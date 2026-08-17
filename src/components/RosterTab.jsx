@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useStore } from "../store.jsx";
 import { uid } from "../lib/db.js";
-import { parseRows, formatPhone } from "../lib/calc.js";
+import { parseRows, formatPhone, copyText } from "../lib/calc.js";
 import { classStudents } from "../lib/session.js";
 
 const BLANK = { name: "", school: "", grade: "", sp: "", pp: "" };
@@ -14,7 +14,17 @@ export default function RosterTab() {
   const [bulkText, setBulkText] = useState("");
   const [editId, setEditId] = useState(null);
   const [draft, setDraft] = useState(BLANK);
+  const [copied, setCopied] = useState(false);
   const xlsxRef = useRef(null);
+
+  // 이 반 명단 전체를 붙여넣기와 같은 형식(탭 구분)으로 클립보드에 복사
+  const copyRoster = () => {
+    if (!list.length) return alert("복사할 학생이 없습니다.");
+    const tsv = list.map((s) => [s.name || "", s.school || "", s.grade || "", s.studentPhone || "", s.parentPhone || ""].join("\t")).join("\n");
+    copyText(tsv);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const setPhone = (k) => (e) => setForm((f) => ({ ...f, [k]: formatPhone(e.target.value) }));
@@ -133,6 +143,7 @@ export default function RosterTab() {
             엑셀 파일 업로드
           </button>
           <button className="btn line" onClick={downloadTemplate}>양식 다운로드</button>
+          <button className="btn line" onClick={copyRoster}>{copied ? "복사됨!" : "명단 복사"}</button>
           <button className="link" onClick={() => setShowBulk((v) => !v)}>붙여넣기</button>
         </div>
         {showBulk && (
