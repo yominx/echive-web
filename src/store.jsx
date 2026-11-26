@@ -1,5 +1,6 @@
 import { createContext, useContext, useRef, useState, useCallback, useEffect } from "react";
-import { loadDB, saveDB, migrate } from "./lib/db";
+import { loadDB, saveDB, migrate, emptyDB } from "./lib/db";
+import { mergeDb, deepEqual } from "./lib/merge";
 import { getCloud, currentUser, writeLog } from "./lib/firebase";
 import { summarizeChanges } from "./lib/diff";
 import { LS_KEY } from "./lib/constants";
@@ -15,6 +16,21 @@ function isTyping() {
 }
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
+
+// 마지막으로 클라우드와 맞춘 상태(병합 기준점). 새로고침 후에도 저장 안 된 변경을 살리기 위해 보관.
+const BASE_KEY = LS_KEY + "_base";
+function loadBase(local) {
+  try {
+    const b = JSON.parse(localStorage.getItem(BASE_KEY) || "null");
+    if (b) return migrate(b);
+  } catch {}
+  return clone(local); // 기준점이 없으면 지금 상태 = 클라우드라고 보고 시작(예전 동작과 같음)
+}
+function saveBase(b) {
+  try {
+    localStorage.setItem(BASE_KEY, JSON.stringify(b));
+  } catch {}
+}
 
 const firstActiveClass = (db) => (db.classes.find((c) => !c.archived) ?? db.classes[0])?.id ?? null;
 const freshUi = (db) => ({ classId: firstActiveClass(db), tab: "attend", sess: null, card: null });
@@ -42,7 +58,6 @@ export function StoreProvider({ children }) {
   const dbRef = useRef(loadDB());
   const [, setVer] = useState(0);
   const bump = useCallback(() => setVer((v) => v + 1), []);
-  const pendingRef = useRef(null);
 
   const db = dbRef.current;
 
@@ -80,13 +95,77 @@ export function StoreProvider({ children }) {
     logTimer.current = setTimeout(flushLog, 2500);
   }, [flushLog]);
 
-  const commit = useCallback(() => {
-    const s = saveDB(dbRef.current);
+  // ── 클라우드 동기화 ─────────────────────────────────────────────
+  // 저장할 때마다 DB 전체를 덮어쓰지 않고, 클라우드 최신본과 3-way 병합해서 저장한다.
+  // 그래서 여러 컴퓨터에서 동시에 고쳐도 서로의 변경이 지워지지 않는다.
+  const baseRef = useRef(loadBase(dbRef.current));
+  const pendingRef = useRef(null); // 입력 중이라 아직 화면에 반영 못 한 클라우드 최신본
+  const saveTimer = useRef(null);
+  const saving = useRef(false);
+  const saveAgain = useRef(false);
+  const retry = useRef(0);
+  const forceRef = useRef(null); // 초기화·복원처럼 클라우드를 통째로 바꿔야 하는 저장
+
+  const runSave = useCallback(async () => {
     const cloud = getCloud();
-    if (cloud) cloud.save(s);
+    if (!cloud) return;
+    if (saving.current) {
+      saveAgain.current = true;
+      return;
+    }
+    saving.current = true;
+    const force = forceRef.current;
+    forceRef.current = null;
+    const base = baseRef.current;
+    const sent = clone(dbRef.current);
+    try {
+      await cloud.transact((remoteJson) => {
+        if (force) return JSON.stringify(force);
+        const remote = remoteJson ? migrate(JSON.parse(remoteJson)) : emptyDB();
+        return JSON.stringify(mergeDb(base, sent, remote));
+      });
+      retry.current = 0;
+      // 저장 결과는 실시간 구독(onSnapshot)으로 돌아와 applyCloud 에서 반영된다
+    } catch (e) {
+      console.error("공유 저장 오류(잠시 후 다시 시도):", e);
+      if (force && !forceRef.current) forceRef.current = force;
+      const wait = Math.min(30000, 2000 * 2 ** retry.current++);
+      clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(runSave, wait);
+    } finally {
+      saving.current = false;
+      if (saveAgain.current) {
+        saveAgain.current = false;
+        clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(runSave, 0);
+      }
+    }
+  }, []);
+
+  const scheduleSave = useCallback(
+    (delay = 600) => {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(runSave, delay);
+    },
+    [runSave]
+  );
+
+  // 네트워크가 다시 연결되면 밀린 저장을 바로 시도
+  useEffect(() => {
+    const h = () => {
+      retry.current = 0;
+      if (getCloud() && !deepEqual(dbRef.current, baseRef.current)) scheduleSave(0);
+    };
+    window.addEventListener("online", h);
+    return () => window.removeEventListener("online", h);
+  }, [scheduleSave]);
+
+  const commit = useCallback(() => {
+    saveDB(dbRef.current);
+    if (getCloud()) scheduleSave();
     scheduleLog();
     bump();
-  }, [bump, scheduleLog]);
+  }, [bump, scheduleLog, scheduleSave]);
 
   const mutate = useCallback(
     (fn) => {
@@ -102,64 +181,76 @@ export function StoreProvider({ children }) {
     return (b[stid] ||= {});
   }, []);
 
-  // 클라우드 → 로컬 반영
-  const applyNow = useCallback(
-    (d) => {
-      dbRef.current = d;
-      // 원격 변경은 원저자 쪽에서 기록됨 → 로컬 로그 기준선만 재설정(중복/오귀속 방지)
-      clearTimeout(logTimer.current);
-      loggedSnap.current = clone(d);
+  // 클라우드 최신본 → 로컬 반영: 이 컴퓨터의 아직 저장 안 된 변경은 유지하면서 병합
+  const applyCloud = useCallback(
+    (remote) => {
+      const base = baseRef.current;
+      const merged = mergeDb(base, dbRef.current, remote);
+      // 활동 로그 기준선에도 원격 변경만 반영 → 원격 변경이 내 로그로 잘못 기록되지 않게
+      loggedSnap.current = mergeDb(base, loggedSnap.current, remote);
+      dbRef.current = merged;
+      baseRef.current = clone(remote);
+      saveDB(merged);
+      saveBase(baseRef.current);
       setUiState((u) => {
         let classId = u.classId;
-        if (classId && !d.classes.some((c) => c.id === classId && !c.archived)) classId = firstActiveClass(d);
+        if (classId && !merged.classes.some((c) => c.id === classId && !c.archived)) classId = firstActiveClass(merged);
         return { ...u, classId };
       });
+      // 아직 클라우드에 없는 이 컴퓨터의 변경이 남아 있으면 저장 예약
+      if (!deepEqual(merged, remote)) scheduleSave();
       bump();
     },
-    [bump]
+    [bump, scheduleSave]
   );
 
   const applyRemote = useCallback(
     (jsonStr) => {
       try {
         const d = migrate(JSON.parse(jsonStr));
-        localStorage.setItem(LS_KEY, jsonStr);
-        if (isTyping()) pendingRef.current = d;
-        else applyNow(d);
-      } catch {}
+        if (isTyping()) pendingRef.current = d; // 입력 중엔 화면이 바뀌지 않게 잠시 보류(최신본만 유지)
+        else {
+          pendingRef.current = null;
+          applyCloud(d);
+        }
+      } catch (e) {
+        console.error("공유 수신 처리 오류:", e);
+      }
     },
-    [applyNow]
+    [applyCloud]
   );
 
+  // 입력칸에서 벗어날 때(다음 칸으로 이동 포함) 보류해 둔 최신본 반영
   useEffect(() => {
     const h = () => {
-      if (pendingRef.current) {
+      setTimeout(() => {
         const d = pendingRef.current;
+        if (!d) return;
         pendingRef.current = null;
-        setTimeout(() => {
-          if (!isTyping()) applyNow(d);
-        }, 60);
-      }
+        applyCloud(d);
+      }, 60);
     };
     document.addEventListener("focusout", h);
     return () => document.removeEventListener("focusout", h);
-  }, [applyNow]);
+  }, [applyCloud]);
 
   // 전체 교체(초기화/복원/시드/예시) — logLabel 이 있으면 단일 로그로 기록
   const replaceDb = useCallback(
     (d, resetUi = true, logLabel = null) => {
       dbRef.current = d;
       if (resetUi) setUiState(freshUi(d));
-      const s = saveDB(d);
-      const cloud = getCloud();
-      if (cloud) cloud.save(s);
+      saveDB(d);
+      if (getCloud()) {
+        forceRef.current = clone(d);
+        scheduleSave(0);
+      }
       clearTimeout(logTimer.current);
       loggedSnap.current = clone(d);
       const u = currentUser();
       if (logLabel && u && u.email) writeLog(u.email, u.displayName || "", [logLabel]);
       bump();
     },
-    [bump]
+    [bump, scheduleSave]
   );
 
   // 탭이 숨겨질 때 대기 중 로그를 즉시 기록(마지막 편집 유실 방지)

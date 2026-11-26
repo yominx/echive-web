@@ -38,6 +38,10 @@ settings: { tmpl }   // 전역 기본 안내문자 템플릿 (반별 tmpl 없을
 ## 상태 관리 (`src/store.jsx`)
 
 - `dbRef`(가변) + `mutate(fn)` → `commit()`이 localStorage·Firestore 저장 + 활동 로그(`lib/diff.js`의 `summarizeChanges`) 예약.
+- **동시 편집 동기화**: 저장은 `cloud.transact`(Firestore 트랜잭션)로 클라우드 최신본을 읽어 `lib/merge.js`의 3-way 병합(`mergeDb(base, local, remote)`) 후 쓴다.
+  `base`(마지막으로 클라우드와 맞춘 상태)는 localStorage `academy_v2_base`에 보관. 객체는 키별, id 배열(classes·students·sessions)은 id별 병합, 같은 칸 충돌은 이 컴퓨터 값 우선.
+  수신(`onSnapshot`)도 같은 병합으로 반영(입력 중이면 칸을 벗어날 때 반영). 초기화·복원·예시 데이터(`replaceDb`)만 병합 없이 통째로 덮어쓴다.
+  절대 `setDoc`으로 `academy/data` 전체를 바로 덮어쓰지 말 것(동시 접속 시 다른 컴퓨터 변경이 지워짐).
 - `recOf(sessionId)`, `recFor(sessionId, studentId)`로 기록 접근. `isOwner = me.owner && !viewAsTeacher`.
 - 공용 조회: `lib/session.js` — `classSessions`(차시순), `classStudents`(이름 가나다순), `resolveSessionId`.
 - 계산: `lib/calc.js` — `scoreOf`, `sessionStats`, `hwItems`, `fillTemplate`, `formatPhone` 등.

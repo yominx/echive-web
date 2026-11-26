@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, onSnapshot, setDoc, deleteDoc, getDoc, collection, addDoc, query, orderBy, limit } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator, doc, onSnapshot, setDoc, deleteDoc, getDoc, collection, addDoc, query, orderBy, limit, runTransaction } from "firebase/firestore";
 
 let cloud = null;
 let _fs = null; // firestore 인스턴스
@@ -78,6 +78,9 @@ export function initFirebase({ onRemote, onStatus, onAuth }) {
     }
     const app = initializeApp(cfg);
     const dbf = getFirestore(app);
+    // 개발·검증용: 로컬 Firestore 에뮬레이터 연결 (운영 설정에는 없음)
+    const emu = window.SHARE.firestoreEmulator;
+    if (emu) connectFirestoreEmulator(dbf, emu.host, emu.port);
     _fs = dbf;
     const ref = doc(dbf, "academy", "data");
 
@@ -94,15 +97,16 @@ export function initFirebase({ onRemote, onStatus, onAuth }) {
         },
         (err) => console.error("공유 수신 오류:", err)
       );
-      let timer = null,
-        latest = null;
+      // 저장: 트랜잭션으로 클라우드 최신본을 읽고, merge(최신본 json|null) 이 돌려준 json 을 쓴다.
+      // 다른 컴퓨터가 그사이 저장했으면 Firestore 가 자동으로 다시 시도하므로 덮어쓰기가 생기지 않는다.
       cloud = {
-        save(jsonStr) {
-          latest = jsonStr;
-          clearTimeout(timer);
-          timer = setTimeout(() => {
-            setDoc(ref, { json: latest, t: Date.now() }).catch((e) => console.error("공유 저장 오류:", e));
-          }, 600);
+        transact(merge) {
+          return runTransaction(dbf, async (tx) => {
+            const snap = await tx.get(ref);
+            const d = snap.exists() ? snap.data() : null;
+            const json = merge(d && d.json ? d.json : null);
+            tx.set(ref, { json, t: Date.now() });
+          });
         },
       };
       onStatus(true);
